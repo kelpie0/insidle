@@ -266,7 +266,7 @@ function handleExhaustion() {
 }
 
 function triggerDailyCelebration(modeName, attempts) {
-    const skipOverlays = ['DAMIEN', 'MRS. KNIBBS', 'RILEY', 'CALLUM', 'BOGO'];
+    const skipOverlays = ['DAMIEN', 'MRS. KNIBBS', 'RILEY', 'CALLUM', 'BOGO', 'MARKIPLIER'];
     if (skipOverlays.includes(currentAnswer.toUpperCase())) return;
     
     const overlay = document.createElement('div');
@@ -324,12 +324,12 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3200);
     }
 
-    // 3. Callum Dynamic Gif Renderer (2 Seconds Fluid Loop)
+    // 3. Callum Dynamic Gif Renderer (Fixed assets path)
     if (answerClean === 'CALLUM') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay callum-egg-overlay';
         const gifImg = document.createElement('img');
-        gifImg.src = 'callumeasteregg.gif';
+        gifImg.src = 'images/callumeasteregg.gif';
         gifImg.className = 'callum-egg-gif';
         overlay.appendChild(gifImg);
         document.body.appendChild(overlay);
@@ -393,6 +393,17 @@ function handleGameWinEasterEggs() {
                 bogoSprite.remove();
             }, 2500);
         }
+    }
+
+    // 7. Markiplier Top-Left GIF Spawner (3 Seconds Display)
+    if (answerClean === 'MARKIPLIER') {
+        const markImg = document.createElement('img');
+        markImg.src = 'images/markiplier.gif';
+        markImg.className = 'markiplier-egg-gif';
+        document.body.appendChild(markImg);
+        setTimeout(() => { 
+            markImg.remove(); 
+        }, 3000);
     }
 }
 
@@ -613,6 +624,7 @@ function handleWordleInput(key) {
     }
 }
 
+// Complete submit logic
 function submitWordleGuess() {
     if (currentWordleGuess.length !== currentAnswer.length) {
         alert(`Guess must be exactly ${currentAnswer.length} letters long.`);
@@ -1043,6 +1055,24 @@ customStyles.innerHTML = `
         69% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(-1); }
         82% { right: -200px; transform: translateY(-50%) scaleX(-1); }
         100% { right: -200px; }
+    }
+
+    /* MARKIPLIER EASTER EGG LAYOUT */
+    .markiplier-egg-gif {
+        position: fixed;
+        top: 20px; left: 20px;
+        max-width: 240px; height: auto;
+        z-index: 100000;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        animation: markiplierTimeline 3.0s ease-in-out forwards;
+    }
+    @keyframes markiplierTimeline {
+        0% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+        12% { opacity: 1; transform: scale(1) translateY(0); }
+        88% { opacity: 1; transform: scale(1) translateY(0); }
+        100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
     }
 
     @keyframes celebrationAnim {
