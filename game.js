@@ -24,6 +24,13 @@ const quotesPool = [
     { id: 23, quote: "Even using scientific notation wouldn't do it justice because the exponent itself would be a number that requires its own scientific notation.", author: "BoltBot" },
     { id: 24, quote: "bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo", author: "bogo" },
     { id: 25, quote: "bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus ", author: "bogo" },
+    { id: 26, quote: "I am the one who knocks.", author: "Walter White" },
+    { id: 27, quote: "I'm... HOME!!!", author: "Damien" },
+    { id: 28, quote: "buh", author: "Callum" },
+    { id: 29, quote: "Yeah I play trackmania, how could you tell?", author: "Callum" },
+    { id: 30, quote: "Faggot.", author: "Callum" },
+    { id: 31, quote: "Shut the frick up", author: "3FS" },
+    { id: 32, quote: "I LOVE YOU SSANO!!!!!!!!!!", author: "Callum" }
 ];
 
 const wordlePool = [
