@@ -12,7 +12,7 @@ const quotesPool = [
     { id: 11, quote: "c.img", author: "Chuddy" },
     { id: 12, quote: "Young man, what the frick is this?!", author: "3FS" },
     { id: 13, quote: "Usually the first night isn't that bad..", author: "Markiplier" },
-    { id: 14, quote: "Good morning everyone! My name is [][][][][]", author: "Jacksepticeye" },
+    { id: 14, quote: "Top of the morning to ya, laddies! My name is...", author: "Jacksepticeye" },
     { id: 15, quote: "Was that tuff?", author: "Billy" },
     { id: 16, quote: "You did not order a 60cm x 165cm Cabinet.", author: "Gurshaan" },
     { id: 17, quote: "*turns body 90°*", author: "Gurshaan" },
