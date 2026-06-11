@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insidle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="toast" id="toast">Copied grid to clipboard</div>
+
+    <header>
+        <h1>Insidle</h1>
+        <div class="mode-container">
+            <button class="mode-btn active" id="mode-daily-quote" onclick="setMode('daily-quote')">Daily Quote</button>
+            <button class="mode-btn" id="mode-infinite-quote" onclick="setMode('infinite-quote')">Inf Quote</button>
+            <button class="mode-btn" id="mode-wordle" onclick="setMode('wordle')">Wordle</button>
+            <button class="mode-btn" id="mode-screenshot" onclick="setMode('screenshot')">Screenshot</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="content-box" id="content-box">
+            <div class="quote-text" id="quote-display">Loading quote...</div>
+            <img id="image-display" src="" alt="Screenshot clue">
+        </div>
+
+        <div class="guess-grid" id="guess-grid">
+            </div>
+
+        <div class="result-modal" id="result-modal">
+            <div class="result-title" id="result-title">Correct</div>
+            <div id="result-meta"></div>
+            <button class="share-btn" onclick="shareResult()">Share Score</button>
+            <button class="next-btn" id="next-btn" onclick="handleNextRound()">Next</button>
+        </div>
+
+        <form class="input-area" id="guess-form" onsubmit="handleGuess(event)">
+            <input type="text" id="guess-input" placeholder="Your guess..." autocomplete="off" required>
+            <button type="submit" class="submit-btn">Guess</button>
+        </form>
+    </main>
+
+    <script src="game.js"></script>
+</body>
+</html>
