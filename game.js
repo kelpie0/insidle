@@ -266,7 +266,7 @@ function handleExhaustion() {
 }
 
 function triggerDailyCelebration(modeName, attempts) {
-    const skipOverlays = ['DAMIEN', 'MRS. KNIBBS', 'RILEY', 'CALLUM', 'BOGO', 'MARKIPLIER'];
+    const skipOverlays = ['DAMIEN', 'MRS. KNIBBS', 'RILEY', 'CALLUM', 'BOGO', 'MARKIPLIER', '3FS'];
     if (skipOverlays.includes(currentAnswer.toUpperCase())) return;
     
     const overlay = document.createElement('div');
@@ -403,6 +403,17 @@ function handleGameWinEasterEggs() {
         document.body.appendChild(markImg);
         setTimeout(() => { 
             markImg.remove(); 
+        }, 3000);
+    }
+
+    // 8. 3FS Bottom-Left GIF Spawner (3 Seconds Display)
+    if (answerClean === '3FS') {
+        const tfsImg = document.createElement('img');
+        tfsImg.src = 'images/3fs.gif';
+        tfsImg.className = 'tfs-egg-gif';
+        document.body.appendChild(tfsImg);
+        setTimeout(() => {
+            tfsImg.remove();
         }, 3000);
     }
 }
@@ -624,7 +635,6 @@ function handleWordleInput(key) {
     }
 }
 
-// Complete submit logic
 function submitWordleGuess() {
     if (currentWordleGuess.length !== currentAnswer.length) {
         alert(`Guess must be exactly ${currentAnswer.length} letters long.`);
@@ -1073,6 +1083,24 @@ customStyles.innerHTML = `
         12% { opacity: 1; transform: scale(1) translateY(0); }
         88% { opacity: 1; transform: scale(1) translateY(0); }
         100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+    }
+
+    /* 3FS EASTER EGG LAYOUT */
+    .tfs-egg-gif {
+        position: fixed;
+        bottom: 20px; left: 20px;
+        max-width: 240px; height: auto;
+        z-index: 100000;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        animation: tfsTimeline 3.0s ease-in-out forwards;
+    }
+    @keyframes tfsTimeline {
+        0% { opacity: 0; transform: scale(0.8) translateY(10px); }
+        12% { opacity: 1; transform: scale(1) translateY(0); }
+        88% { opacity: 1; transform: scale(1) translateY(0); }
+        100% { opacity: 0; transform: scale(0.8) translateY(10px); }
     }
 
     @keyframes celebrationAnim {
