@@ -179,7 +179,7 @@ function playWinSound() {
     initAudio();
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
-    const notes = [293.66, 349.23, 440.00, 587.33]; // D4, F4, A4, D5
+    const notes = [293.66, 349.23, 440.00, 587.33];
     
     notes.forEach((freq, index) => {
         const osc = audioCtx.createOscillator();
@@ -198,7 +198,6 @@ function playWinSound() {
     });
 }
 
-// Procedural Synthetic Meow Engine for Callum Easter Egg
 function playMeowSound() {
     initAudio();
     if (!audioCtx) return;
@@ -267,7 +266,8 @@ function handleExhaustion() {
 }
 
 function triggerDailyCelebration(modeName, attempts) {
-    if (currentAnswer.toUpperCase() === 'DAMIEN') return; // Handled exclusively by Damien Easter Egg
+    const skipOverlays = ['DAMIEN', 'MRS. KNIBBS', 'RILEY', 'CALLUM', 'BOGO'];
+    if (skipOverlays.includes(currentAnswer.toUpperCase())) return;
     
     const overlay = document.createElement('div');
     overlay.className = 'celebration-overlay';
@@ -284,34 +284,30 @@ function triggerDailyCelebration(modeName, attempts) {
     }, 2000);
 }
 
-// --- GLOBAL EASTER EGG MANAGER ---
+// --- EXTENDED EASTER EGG MATRIX ---
 function handleGameWinEasterEggs() {
     const answerClean = currentAnswer.toUpperCase();
     
-    // 1. Callum Meow Sound Trigger
     if (answerClean === 'CALLUM') {
         playMeowSound();
     } else {
         playWinSound();
     }
 
-    // 2. Gurshaan "C" Animation Trigger
+    // 1. Fluid Gurshaan "C" Animation Update
     if (answerClean === 'GURSHAAN') {
         const titleElement = document.querySelector('h1') || document.querySelector('.header h1') || document.getElementById('logo');
         if (titleElement) {
             const originalContent = titleElement.innerHTML;
             titleElement.innerHTML = `<span class="gurshaan-egg-c">C</span>`;
-            setTimeout(() => {
-                titleElement.innerHTML = originalContent;
-            }, 2200);
+            setTimeout(() => { titleElement.innerHTML = originalContent; }, 2200);
         }
     }
 
-    // 3. Damien "Umazing!" Animation Trigger
+    // 2. Damien "Umazing!"
     if (answerClean === 'DAMIEN') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay damien-egg-overlay';
-
         const textContainer = document.createElement('div');
         textContainer.className = 'damien-egg-text';
         
@@ -323,11 +319,80 @@ function handleGameWinEasterEggs() {
             letterSpan.style.animationDelay = `${i * 0.08}s`;
             textContainer.appendChild(letterSpan);
         }
-        
         overlay.appendChild(textContainer);
         document.body.appendChild(overlay);
-
         setTimeout(() => { overlay.remove(); }, 3200);
+    }
+
+    // 3. Callum Dynamic Gif Renderer (2 Seconds Fluid Loop)
+    if (answerClean === 'CALLUM') {
+        const overlay = document.createElement('div');
+        overlay.className = 'celebration-overlay callum-egg-overlay';
+        const gifImg = document.createElement('img');
+        gifImg.src = 'callumeasteregg.gif';
+        gifImg.className = 'callum-egg-gif';
+        overlay.appendChild(gifImg);
+        document.body.appendChild(overlay);
+        setTimeout(() => { overlay.remove(); }, 2000);
+    }
+
+    // 4. Mrs. Knibbs "⚠️ LARP ALERT ⚠️" Glowing Wave
+    if (answerClean === 'MRS. KNIBBS') {
+        const overlay = document.createElement('div');
+        overlay.className = 'celebration-overlay knibbs-egg-overlay';
+        const textContainer = document.createElement('div');
+        textContainer.className = 'knibbs-egg-text';
+        
+        const phrase = "⚠️ LARP ALERT ⚠️";
+        for (let i = 0; i < phrase.length; i++) {
+            const letterSpan = document.createElement('span');
+            letterSpan.innerText = phrase[i] === ' ' ? '\u00A0' : phrase[i];
+            letterSpan.className = 'knibbs-egg-letter';
+            letterSpan.style.animationDelay = `${i * 0.06}s`;
+            textContainer.appendChild(letterSpan);
+        }
+        overlay.appendChild(textContainer);
+        document.body.appendChild(overlay);
+        setTimeout(() => { overlay.remove(); }, 3200);
+    }
+
+    // 5. Riley Staggered Alternate "67" Rainbow System
+    if (answerClean === 'RILEY') {
+        const overlay = document.createElement('div');
+        overlay.className = 'celebration-overlay riley-egg-overlay';
+        const textContainer = document.createElement('div');
+        textContainer.className = 'riley-egg-text';
+        
+        const digits = ['6', '7'];
+        digits.forEach((digit, i) => {
+            const digitSpan = document.createElement('span');
+            digitSpan.innerText = digit;
+            digitSpan.className = `riley-egg-digit digit-${digit}`;
+            digitSpan.style.animationDelay = `${i * 0.3}s`;
+            textContainer.appendChild(digitSpan);
+        });
+        overlay.appendChild(textContainer);
+        document.body.appendChild(overlay);
+        setTimeout(() => { overlay.remove(); }, 3000);
+    }
+
+    // 6. Bogo Row-Drag & Kinetic Snap Fling
+    if (answerClean === 'BOGO') {
+        const targetRowIndex = gameState.guesses.length - 1;
+        const winRow = document.getElementById(`row-${targetRowIndex}`);
+        if (winRow) {
+            const bogoSprite = document.createElement('img');
+            bogoSprite.src = 'images/bogo.png';
+            bogoSprite.className = 'bogo-egg-sprite';
+            document.body.appendChild(bogoSprite);
+            
+            winRow.classList.add('bogo-row-dragged');
+            
+            setTimeout(() => {
+                winRow.classList.remove('bogo-row-dragged');
+                bogoSprite.remove();
+            }, 2500);
+        }
     }
 }
 
@@ -820,7 +885,7 @@ window.addEventListener('keydown', (e) => {
     handleWordleInput(e.key);
 });
 
-// --- CSS STRUCTURAL INJECTIONS FOR THE LORE INJECTOR ---
+// --- ENGINE STYLE SHEET REGISTRY ---
 const customStyles = document.createElement('style');
 customStyles.innerHTML = `
     .wordle-mode-header {
@@ -860,56 +925,124 @@ customStyles.innerHTML = `
     }
     .celebration-text span { color: #2ed573; }
 
-    /* EASTER EGG: MASON MODE OVERRIDE (ORANGE OVER GREEN) */
+    /* MASON MODIFIER */
     .tile.correct.mason-mode, .key.correct.mason-mode {
         background-color: #ff9f43 !important;
         border-color: #ff9f43 !important;
         color: #ffffff !important;
     }
 
-    /* EASTER EGG: GURSHAAN "C" JUMP */
+    /* GURSHAAN LIQUID "C" ANIMATION */
     .gurshaan-egg-c {
         color: #00a8ff !important;
         display: inline-block;
         font-size: 3.5rem;
         font-weight: 900;
-        animation: gurshaanBounceC 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        transform-origin: bottom center;
+        animation: gurshaanFluidBounce 2.0s cubic-bezier(0.28, 0.84, 0.42, 1) forwards;
     }
 
-    @keyframes gurshaanBounceC {
-        0% { transform: scale(1) translateY(0); }
-        15% { transform: scale(1.4) translateY(0); }
-        30% { transform: scale(1.4) translateY(-45px); }
-        45% { transform: scale(1.4) translateY(0); }
-        60% { transform: scale(1.4) translateY(-20px); }
-        75% { transform: scale(1.4) translateY(0); }
-        90% { transform: scale(1.1) translateY(0); }
-        100% { transform: scale(1) translateY(0); }
+    @keyframes gurshaanFluidBounce {
+        0%   { transform: scale(1, 1)      translateY(0); }
+        10%  { transform: scale(1.2, 0.8)  translateY(0); }
+        25%  { transform: scale(0.9, 1.15) translateY(-50px); }
+        40%  { transform: scale(1.05, 0.9) translateY(0); }
+        55%  { transform: scale(0.97, 1.02) translateY(-15px); }
+        70%  { transform: scale(1.02, 0.98) translateY(0); }
+        85%  { transform: scale(1, 1)      translateY(-3px); }
+        100% { transform: scale(1, 1)      translateY(0); }
     }
 
-    /* EASTER EGG: DAMIEN WAVE SYSTEM */
-    .damien-egg-overlay {
-        animation: celebrationAnim 3.2s ease-in-out forwards !important;
-    }
-    .damien-egg-text {
-        display: flex;
-        gap: 6px;
-        justify-content: center; align-items: center;
-    }
+    /* DAMIEN WAVE CONFIG */
+    .damien-egg-overlay { animation: celebrationAnim 3.2s ease-in-out forwards !important; }
+    .damien-egg-text { display: flex; gap: 6px; justify-content: center; align-items: center; }
     .damien-egg-letter {
-        display: inline-block;
-        color: #9b59b6; /* Purple text */
-        font-family: 'Inter', sans-serif;
-        font-size: 4rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 2px;
+        display: inline-block; color: #9b59b6;
+        font-family: 'Inter', sans-serif; font-size: 4rem; font-weight: 900;
         animation: damienWaveAnim 1.1s ease-in-out infinite;
     }
-
     @keyframes damienWaveAnim {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-35px); }
+    }
+
+    /* CALLUM FLUID GIF OVERLAY */
+    .callum-egg-overlay { animation: fadeInOut 2.0s ease-in-out forwards !important; }
+    .callum-egg-gif {
+        max-width: 80vw; max-height: 70vh;
+        border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        animation: scaleFluidInOut 2.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; }
+        15%, 85% { opacity: 1; }
+    }
+    @keyframes scaleFluidInOut {
+        0% { transform: scale(0.4); }
+        15%, 85% { transform: scale(1); }
+        100% { transform: scale(0.85); }
+    }
+
+    /* MRS KNIBBS GLOW MATRIX */
+    .knibbs-egg-overlay { animation: celebrationAnim 3.2s ease-in-out forwards !important; }
+    .knibbs-egg-text { display: flex; gap: 4px; justify-content: center; align-items: center; }
+    .knibbs-egg-letter {
+        display: inline-block; color: #ff3838;
+        font-family: 'Inter', sans-serif; font-size: 3.6rem; font-weight: 900;
+        text-shadow: 0 0 12px #ff3838, 0 0 30px rgba(255, 56, 56, 0.7);
+        animation: knibbsWaveAnim 1.2s ease-in-out infinite;
+    }
+    @keyframes knibbsWaveAnim {
+        0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px red); }
+        50% { transform: translateY(-30px); filter: drop-shadow(0 0 8px red); }
+    }
+
+    /* RILEY MEME CONFIGURATION */
+    .riley-egg-overlay { animation: celebrationAnim 3.0s ease-in-out forwards !important; }
+    .riley-egg-text { display: flex; gap: 20px; }
+    .riley-egg-digit {
+        display: inline-block; font-size: 7rem; font-weight: 950;
+        background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-size: 300% 300%;
+        animation: rileyBounce 0.7s ease-in-out infinite alternate, rainbowSpectrum 4s linear infinite;
+    }
+    @keyframes rileyBounce {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-50px); }
+    }
+    @keyframes rainbowSpectrum {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* BOGO PHYSICS DRAG ENGINE */
+    .bogo-row-dragged {
+        animation: bogoRowTimeline 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .bogo-egg-sprite {
+        position: fixed; top: 50%; right: -200px;
+        width: 140px; height: auto;
+        transform: translateY(-50%); z-index: 100000;
+        pointer-events: none;
+        animation: bogoSpriteTimeline 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    @keyframes bogoRowTimeline {
+        0% { transform: translateX(0); }
+        22% { transform: translateX(30px); }
+        38%, 68% { transform: translateX(-130vw); }
+        76% { transform: translateX(45px); }
+        86% { transform: translateX(-15px); }
+        100% { transform: translateX(0); }
+    }
+    @keyframes bogoSpriteTimeline {
+        0% { right: -200px; transform: translateY(-50%) scaleX(1); }
+        22% { right: 12%; transform: translateY(-50%) scaleX(1); }
+        38%, 68% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(1); }
+        69% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(-1); }
+        82% { right: -200px; transform: translateY(-50%) scaleX(-1); }
+        100% { right: -200px; }
     }
 
     @keyframes celebrationAnim {
