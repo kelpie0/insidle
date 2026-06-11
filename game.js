@@ -81,7 +81,6 @@ const wordlePool = [
     { id: 52, word: "KELPIE" },
     { id: 53, word: "BILLY" },
     { id: 54, word: "SIXSEVEN" },
-    
 ];
 
 const screenshotPool = [
@@ -95,7 +94,6 @@ const screenshotPool = [
     { id: 8, image: "images/callum.gif", author: "Callum" },
     { id: 9, image: "images/crack.png", author: "Callum" },
 ];
-
 
 const MAX_GUESSES = 6;
 let currentMode = 'daily-quote'; 
@@ -112,6 +110,77 @@ let gameState = {
     gameOver: false,
     won: false
 };
+
+// --- AUDIO CONFIGURATION ENGINE ---
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function playTypeSound() {
+    initAudio();
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    // Add subtle structural frequency variation to simulate real mechanical keyboard clicks
+    osc.frequency.setValueAtTime(550 + Math.random() * 150, audioCtx.currentTime);
+    
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.04);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.04);
+}
+
+function playFailSound() {
+    initAudio();
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(170, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.2);
+    
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.22);
+}
+
+function playWinSound() {
+    initAudio();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    // Cheerful rising 4-note retro arpeggio cascade
+    const notes = [293.66, 349.23, 440.00, 587.33]; // D4, F4, A4, D5
+    
+    notes.forEach((freq, index) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + index * 0.07);
+        
+        gain.gain.setValueAtTime(0.12, now + index * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.07 + 0.35);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + index * 0.07);
+        osc.stop(now + index * 0.07 + 0.35);
+    });
+}
 
 function getEditDistance(a, b) {
     if (a.length === 0) return b.length;
@@ -159,7 +228,7 @@ function handleExhaustion() {
 
 function triggerDailyCelebration(modeName, attempts) {
     const overlay = document.createElement('div');
-    overlay.className = 'celebration-overlay'; // Let CSS handle the styles
+    overlay.className = 'celebration-overlay';
 
     const textContainer = document.createElement('div');
     textContainer.className = 'celebration-text';
@@ -168,7 +237,6 @@ function triggerDailyCelebration(modeName, attempts) {
     overlay.appendChild(textContainer);
     document.body.appendChild(overlay);
 
-    // The CSS animation lasts 2 seconds, so we safely destroy the element right after it finishes
     setTimeout(() => {
         overlay.remove();
     }, 2000);
@@ -350,11 +418,15 @@ function handleGuess(event) {
     if (result === 'correct') {
         gameState.won = true;
         gameState.gameOver = true;
+        playWinSound();
         if (currentMode === 'daily-quote' && (gameState.guesses.length === 1 || gameState.guesses.length === 2)) {
             triggerDailyCelebration('QUOTE', gameState.guesses.length);
         }
-    } else if (gameState.guesses.length >= MAX_GUESSES) {
-        gameState.gameOver = true;
+    } else {
+        playFailSound();
+        if (gameState.guesses.length >= MAX_GUESSES) {
+            gameState.gameOver = true;
+        }
     }
 
     if (currentMode !== 'infinite-quote' && currentMode !== 'infinite-wordle' && currentMode !== 'screenshot') {
@@ -374,12 +446,14 @@ function handleWordleInput(key) {
     if (gameState.gameOver) return;
     if (key === 'ENTER' || key === 'Enter') {
         submitWordleGuess();
-    } else if (key === 'BACKSPACE' || key === 'Backspace') {
+    } else if (key === 'BACKSPACE' || key === 'Backspace' || key === '⌫') {
         currentWordleGuess = currentWordleGuess.slice(0, -1);
+        playTypeSound();
         updateGridDisplay();
     } else if (/^[a-zA-Z]$/.test(key)) {
         if (currentWordleGuess.length < currentAnswer.length) {
             currentWordleGuess += key.toUpperCase();
+            playTypeSound();
             updateGridDisplay();
         }
     }
@@ -396,11 +470,15 @@ function submitWordleGuess() {
     if (currentWordleGuess === currentAnswer) {
         gameState.won = true;
         gameState.gameOver = true;
+        playWinSound();
         if (currentMode === 'wordle' && (gameState.guesses.length === 1 || gameState.guesses.length === 2)) {
             triggerDailyCelebration('WORDLE', gameState.guesses.length);
         }
-    } else if (gameState.guesses.length >= MAX_GUESSES) {
-        gameState.gameOver = true;
+    } else {
+        playFailSound();
+        if (gameState.guesses.length >= MAX_GUESSES) {
+            gameState.gameOver = true;
+        }
     }
     
     currentWordleGuess = "";
@@ -436,7 +514,7 @@ function setupKeyboard() {
             keyElement.innerText = key;
             keyElement.setAttribute('data-key', key);
             keyElement.className = 'key';
-            if (key === 'ENTER' || key === 'BACKSPACE') {
+            if (key === 'ENTER' || key === 'BACKSPACE' || key === '⌫') {
                 keyElement.classList.add('wide');
             }
             
@@ -478,12 +556,12 @@ function updateKeyboardKeyStatuses() {
         const keyText = keyElement.getAttribute('data-key');
         if (keyText && statuses[keyText]) {
             keyElement.className = `key ${statuses[keyText]}`;
-            if (keyText === 'ENTER' || keyText === 'BACKSPACE') {
+            if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '⌫') {
                 keyElement.classList.add('wide');
             }
         } else if (keyText) {
             keyElement.className = 'key';
-            if (keyText === 'ENTER' || keyText === 'BACKSPACE') {
+            if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '⌫') {
                 keyElement.classList.add('wide');
             }
         }
@@ -675,7 +753,6 @@ customStyles.innerHTML = `
         justify-content: center;
         align-items: center;
         z-index: 99999;
-        /* Runs the keyframe loop below over 2 seconds */
         animation: celebrationAnim 2s ease-in-out forwards; 
     }
 
@@ -714,4 +791,23 @@ customStyles.innerHTML = `
 `;
 document.head.appendChild(customStyles);
 
-window.onload = initGame;
+// Wire up global input listener for regular typing modes (Quotes & Screenshots)
+document.addEventListener('DOMContentLoaded', () => {
+    const textInput = document.getElementById('guess-input');
+    if (textInput) {
+        textInput.addEventListener('input', () => {
+            playTypeSound();
+        });
+    }
+});
+
+window.onload = () => {
+    initGame();
+    // Fallback binding if DOMContentLoaded already fired before script execution
+    const textInput = document.getElementById('guess-input');
+    if (textInput) {
+        textInput.addEventListener('input', () => {
+            playTypeSound();
+        });
+    }
+};
