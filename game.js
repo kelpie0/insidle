@@ -113,7 +113,6 @@ function initGame() {
             return;
         }
         currentClueData = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
-        playedQuotes.push(currentClueData.id);
         currentAnswer = currentClueData.author;
         quoteDisplay.innerText = currentClueData.quote;
         quoteDisplay.style.display = 'block';
@@ -137,7 +136,6 @@ function initGame() {
             return;
         }
         currentClueData = availableScreenshots[Math.floor(Math.random() * availableScreenshots.length)];
-        playedScreenshots.push(currentClueData.id);
         currentAnswer = currentClueData.author;
         document.getElementById('image-display').src = currentClueData.image;
         document.getElementById('image-display').style.display = 'block';
@@ -209,6 +207,14 @@ function handleGuess(event) {
     const input = document.getElementById('guess-input');
     let userGuess = input.value.trim().toUpperCase();
     if (!userGuess) return;
+
+    if (gameState.guesses.length === 0) {
+        if (currentMode === 'infinite-quote' && !playedQuotes.includes(currentClueData.id)) {
+            playedQuotes.push(currentClueData.id);
+        } else if (currentMode === 'screenshot' && !playedScreenshots.includes(currentClueData.id)) {
+            playedScreenshots.push(currentClueData.id);
+        }
+    }
 
     gameState.guesses.push(userGuess);
 
@@ -423,6 +429,16 @@ function endGame() {
 }
 
 function handleNextRound() {
+    if (currentMode === 'infinite-quote' && currentClueData) {
+        if (!playedQuotes.includes(currentClueData.id)) {
+            playedQuotes.push(currentClueData.id);
+        }
+    } else if (currentMode === 'screenshot' && currentClueData) {
+        if (!playedScreenshots.includes(currentClueData.id)) {
+            playedScreenshots.push(currentClueData.id);
+        }
+    }
+
     if (currentMode === 'infinite-quote' || currentMode === 'screenshot') {
         initGame();
     }
