@@ -7,7 +7,23 @@ const quotesPool = [
     { id: 6, quote: "Wait, is that the linux penguin?", author: "Mrs. Knibbs" },
     { id: 7, quote: "Yo can we get “losed” as a qoute?", author: "Damien" },
     { id: 8, quote: "The divorce isn't going well", author: "Harrison" },
-    { id: 9, quote: "Mitosis. a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u̴̒̊͊͠ a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u", author: "Damien" }
+    { id: 9, quote: "Mitosis, a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u̴̒̊͊͠ a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u", author: "Damien" },
+    { id: 10, quote: "Hi", author: "Gurshaan" },
+    { id: 11, quote: "c.img", author: "Chuddy" },
+    { id: 12, quote: "Young man, what the frick is this?!", author: "3FS" },
+    { id: 13, quote: "Usually the first night isn't that bad..", author: "Markiplier" },
+    { id: 14, quote: "Good morning everyone! My name is [][][][][]", author: "Jacksepticeye" },
+    { id: 15, quote: "Was that tuff?", author: "Billy" },
+    { id: 16, quote: "You did not order a 60cm x 165cm Cabinet.", author: "Gurshaan" },
+    { id: 17, quote: "*turns body 90°*", author: "Gurshaan" },
+    { id: 18, quote: "Do you think I can touch the rim?", author: "Callum" },
+    { id: 19, quote: "I'm so fucking confused..", author: "Damien" },
+    { id: 20, quote: "You are SKILL-LESS.", author: "Mrs. Knibbs" },
+    { id: 21, quote: "You said I could use the peanut butter.", author: "Jschlatt" },
+    { id: 22, quote: ".edit deer", author: "NotSoBot" },
+    { id: 23, quote: "Even using scientific notation wouldn't do it justice because the exponent itself would be a number that requires its own scientific notation.", author: "BoltBot" },
+    { id: 24, quote: "bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo", author: "bogo" },
+    { id: 25, quote: "bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus ", author: "bogo" },
 ];
 
 const wordlePool = [
@@ -74,8 +90,12 @@ const screenshotPool = [
     { id: 3, image: "images/matthew.png", author: "Matthew" },
     { id: 4, image: "images/chuddy.png", author: "Chuddy" },
     { id: 5, image: "images/harrison.png", author: "Harrison" },
-    { id: 6, image: "images/jpeg2.png", author: "Gurshaan" }
+    { id: 6, image: "images/bogo.png", author: "Bogo" },
+    { id: 7, image: "images/doorless.png", author: "Gurshaan" },
+    { id: 8, image: "images/callum.gif", author: "Callum" },
+    { id: 9, image: "images/crack.png", author: "Callum" },
 ];
+
 
 const MAX_GUESSES = 6;
 let currentMode = 'daily-quote'; 
