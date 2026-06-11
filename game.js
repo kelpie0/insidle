@@ -36,6 +36,8 @@ let currentClueData = null;
 let currentWordleGuess = "";
 let playedQuotes = [];
 let playedScreenshots = [];
+let playedWordles = [];
+let recentScreenshots = [];
 
 let gameState = {
     guesses: [],
@@ -87,6 +89,23 @@ function handleExhaustion() {
     document.getElementById('result-modal').style.display = 'none';
 }
 
+function triggerDailyCelebration(modeName, attempts) {
+    const overlay = document.createElement('div');
+    overlay.className = 'celebration-overlay'; // Let CSS handle the styles
+
+    const textContainer = document.createElement('div');
+    textContainer.className = 'celebration-text';
+    textContainer.innerHTML = `${modeName} IN <span>${attempts}</span>!`;
+    
+    overlay.appendChild(textContainer);
+    document.body.appendChild(overlay);
+
+    // The CSS animation lasts 2 seconds, so we safely destroy the element right after it finishes
+    setTimeout(() => {
+        overlay.remove();
+    }, 2000);
+}
+
 function initGame() {
     document.getElementById('result-modal').style.display = 'none';
     document.getElementById('guess-form').style.display = 'flex';
@@ -95,9 +114,12 @@ function initGame() {
     document.getElementById('next-btn').style.display = 'none';
     document.getElementById('keyboard').style.display = 'none';
 
+    const oldInfBtn = document.getElementById('modal-infinite-wordle-btn');
+    if (oldInfBtn) oldInfBtn.remove();
+
     const quoteDisplay = document.getElementById('quote-display');
     quoteDisplay.style.display = 'none';
-    quoteDisplay.classList.remove('system-message');
+    quoteDisplay.classList.remove('system-message', 'wordle-mode-header');
     document.getElementById('image-display').style.display = 'none';
 
     const today = new Date();
@@ -127,11 +149,29 @@ function initGame() {
     } else if (currentMode === 'wordle') {
         currentClueData = getDailyItem(wordlePool, dateKey);
         currentAnswer = currentClueData.word.toUpperCase();
-        quoteDisplay.innerText = "Wordle Mode";
+        quoteDisplay.innerText = "WORDLE";
+        quoteDisplay.classList.add('wordle-mode-header');
         quoteDisplay.style.display = 'block';
         document.getElementById('guess-form').style.display = 'none';
         document.getElementById('keyboard').style.display = 'flex';
         loadSavedState(`insidle_daily_wordle_${dateKey}`);
+        setupKeyboard();
+
+    } else if (currentMode === 'infinite-wordle') {
+        const availableWordles = wordlePool.filter(w => !playedWordles.includes(w.id));
+        if (availableWordles.length === 0) {
+            handleExhaustion();
+            return;
+        }
+        currentClueData = availableWordles[Math.floor(Math.random() * availableWordles.length)];
+        currentAnswer = currentClueData.word.toUpperCase();
+        quoteDisplay.innerText = "WORDLE";
+        quoteDisplay.classList.add('wordle-mode-header');
+        quoteDisplay.style.display = 'block';
+        document.getElementById('guess-form').style.display = 'none';
+        document.getElementById('keyboard').style.display = 'flex';
+        document.getElementById('next-btn').style.display = 'block';
+        resetState();
         setupKeyboard();
 
     } else if (currentMode === 'screenshot') {
@@ -140,8 +180,20 @@ function initGame() {
             handleExhaustion();
             return;
         }
-        currentClueData = availableScreenshots[Math.floor(Math.random() * availableScreenshots.length)];
+        
+        let freshScreenshots = availableScreenshots.filter(s => !recentScreenshots.includes(s.id));
+        if (freshScreenshots.length === 0) {
+            freshScreenshots = availableScreenshots;
+        }
+        
+        currentClueData = freshScreenshots[Math.floor(Math.random() * freshScreenshots.length)];
         currentAnswer = currentClueData.author;
+        
+        recentScreenshots.push(currentClueData.id);
+        if (recentScreenshots.length > 3) {
+            recentScreenshots.shift();
+        }
+
         document.getElementById('image-display').src = currentClueData.image;
         document.getElementById('image-display').style.display = 'block';
         document.getElementById('next-btn').style.display = 'block';
@@ -178,7 +230,7 @@ function setupGrid() {
     const grid = document.getElementById('guess-grid');
     grid.innerHTML = '';
     
-    const columnsCount = (currentMode === 'wordle') ? currentAnswer.length : 1;
+    const columnsCount = (currentMode === 'wordle' || currentMode === 'infinite-wordle') ? currentAnswer.length : 1;
 
     for (let i = 0; i < MAX_GUESSES; i++) {
         const row = document.createElement('div');
@@ -199,8 +251,11 @@ function setMode(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
     
-    const formats = ['daily-quote', 'infinite-quote', 'wordle', 'screenshot'];
-    formats.forEach(f => document.getElementById(`mode-${f}`).classList.toggle('active', f === mode));
+    const formats = ['daily-quote', 'infinite-quote', 'wordle', 'infinite-wordle', 'screenshot'];
+    formats.forEach(f => {
+        const btn = document.getElementById(`mode-${f}`);
+        if (btn) btn.classList.toggle('active', f === mode);
+    });
     
     initGame();
 }
@@ -227,11 +282,14 @@ function handleGuess(event) {
     if (result === 'correct') {
         gameState.won = true;
         gameState.gameOver = true;
+        if (currentMode === 'daily-quote' && (gameState.guesses.length === 1 || gameState.guesses.length === 2)) {
+            triggerDailyCelebration('QUOTE', gameState.guesses.length);
+        }
     } else if (gameState.guesses.length >= MAX_GUESSES) {
         gameState.gameOver = true;
     }
 
-    if (currentMode !== 'infinite-quote' && currentMode !== 'screenshot') {
+    if (currentMode !== 'infinite-quote' && currentMode !== 'infinite-wordle' && currentMode !== 'screenshot') {
         const today = new Date();
         const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
         const modeKeys = { 'daily-quote': 'quote', 'wordle': 'wordle' };
@@ -270,15 +328,20 @@ function submitWordleGuess() {
     if (currentWordleGuess === currentAnswer) {
         gameState.won = true;
         gameState.gameOver = true;
+        if (currentMode === 'wordle' && (gameState.guesses.length === 1 || gameState.guesses.length === 2)) {
+            triggerDailyCelebration('WORDLE', gameState.guesses.length);
+        }
     } else if (gameState.guesses.length >= MAX_GUESSES) {
         gameState.gameOver = true;
     }
     
     currentWordleGuess = "";
     
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-    localStorage.setItem(`insidle_daily_wordle_${dateKey}`, JSON.stringify(gameState));
+    if (currentMode === 'wordle') {
+        const today = new Date();
+        const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+        localStorage.setItem(`insidle_daily_wordle_${dateKey}`, JSON.stringify(gameState));
+    }
     
     updateGridDisplay();
     updateKeyboardKeyStatuses();
@@ -363,7 +426,7 @@ function updateGridDisplay() {
     for (let i = 0; i < MAX_GUESSES; i++) {
         const currentGuessStr = gameState.guesses[i];
         
-        if (currentMode === 'wordle') {
+        if (currentMode === 'wordle' || currentMode === 'infinite-wordle') {
             let targetLetterCounts = {};
             for (let char of currentAnswer) {
                 targetLetterCounts[char] = (targetLetterCounts[char] || 0) + 1;
@@ -431,6 +494,28 @@ function endGame() {
         title.innerText = "Game Over";
         meta.innerText = `Out of attempts. Target answer was: ${currentAnswer}`;
     }
+
+    if (currentMode === 'wordle') {
+        const modalContent = meta.parentNode;
+        if (modalContent && !document.getElementById('modal-infinite-wordle-btn')) {
+            const infBtn = document.createElement('button');
+            infBtn.id = 'modal-infinite-wordle-btn';
+            infBtn.innerText = "Play Infinite Wordle";
+            infBtn.style.marginTop = "18px";
+            infBtn.style.padding = "10px 20px";
+            infBtn.style.backgroundColor = "#2ed573";
+            infBtn.style.color = "#ffffff";
+            infBtn.style.border = "none";
+            infBtn.style.borderRadius = "5px";
+            infBtn.style.cursor = "pointer";
+            infBtn.style.fontFamily = "'Inter', sans-serif";
+            infBtn.style.fontWeight = "bold";
+            infBtn.onclick = () => {
+                setMode('infinite-wordle');
+            };
+            modalContent.appendChild(infBtn);
+        }
+    }
 }
 
 function handleNextRound() {
@@ -438,13 +523,17 @@ function handleNextRound() {
         if (!playedQuotes.includes(currentClueData.id)) {
             playedQuotes.push(currentClueData.id);
         }
+    } else if (currentMode === 'infinite-wordle' && currentClueData) {
+        if (!playedWordles.includes(currentClueData.id)) {
+            playedWordles.push(currentClueData.id);
+        }
     } else if (currentMode === 'screenshot' && currentClueData) {
         if (!playedScreenshots.includes(currentClueData.id)) {
             playedScreenshots.push(currentClueData.id);
         }
     }
 
-    if (currentMode === 'infinite-quote' || currentMode === 'screenshot') {
+    if (currentMode === 'infinite-quote' || currentMode === 'infinite-wordle' || currentMode === 'screenshot') {
         initGame();
     }
 }
@@ -454,7 +543,7 @@ function shareResult() {
     
     for (let i = 0; i < gameState.guesses.length; i++) {
         const guess = gameState.guesses[i];
-        if (currentMode === 'wordle') {
+        if (currentMode === 'wordle' || currentMode === 'infinite-wordle') {
             let targetLetterCounts = {};
             for (let char of currentAnswer) targetLetterCounts[char] = (targetLetterCounts[char] || 0) + 1;
             let rowIcons = Array(currentAnswer.length).fill('🟥');
@@ -482,8 +571,79 @@ function shareResult() {
 }
 
 window.addEventListener('keydown', (e) => {
-    if (currentMode !== 'wordle' || gameState.gameOver) return;
+    if ((currentMode !== 'wordle' && currentMode !== 'infinite-wordle') || gameState.gameOver) return;
     handleWordleInput(e.key);
 });
+
+const customStyles = document.createElement('style');
+customStyles.innerHTML = `
+    .wordle-mode-header {
+        font-family: 'Inter', sans-serif !important;
+        font-style: normal !important;
+        font-size: 1.7rem !important;
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        text-align: center;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 10px 0 !important;
+        margin: 5px 0 15px 0 !important;
+    }
+    .wordle-mode-header::before,
+    .wordle-mode-header::after {
+        display: none !important;
+    }
+
+    .celebration-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        /* Runs the keyframe loop below over 2 seconds */
+        animation: celebrationAnim 2s ease-in-out forwards; 
+    }
+
+    .celebration-text {
+        color: #ffffff;
+        font-family: 'Inter', sans-serif;
+        font-size: 2.8rem;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .celebration-text span {
+        color: #2ed573; 
+    }
+
+    @keyframes celebrationAnim {
+        0% {
+            opacity: 0;
+            transform: scale(0.75);
+        }
+        10% {
+            opacity: 1;
+            transform: scale(1); 
+        }
+        85% {
+            opacity: 1;
+            transform: scale(1); 
+        }
+        100% {
+            opacity: 0;
+            transform: scale(0.85); 
+        }
+    }
+`;
+document.head.appendChild(customStyles);
 
 window.onload = initGame;
