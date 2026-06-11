@@ -4,7 +4,10 @@ const quotesPool = [
     { id: 3, quote: "I'm 6 foot 2!", author: "Riley" },
     { id: 4, quote: "That's ball knowledge.", author: "Mason" },
     { id: 5, quote: "Ba is minton about Y", author: "Gurshaan" },
-    { id: 6, quote: "Wait, is that the linux penguin?", author: "Mrs. Knibbs" }
+    { id: 6, quote: "Wait, is that the linux penguin?", author: "Mrs. Knibbs" },
+    { id: 7, quote: "Yo can we get “losed” as a qoute", author: "Damien" },
+    { id: 8, quote: "The divorce isn't going well", author: "Harrison" },
+    { id: 9, quote: "Mitosis. a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u̴̒̊͊͠ a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u", author: "Damien" }
 ];
 
 const wordlePool = [
@@ -21,7 +24,9 @@ const screenshotPool = [
     { id: 1, image: "images/itsdamo.png", author: "Damien" },
     { id: 2, image: "images/jpeg1.png", author: "Gurshaan" },
     { id: 3, image: "images/matthew.png", author: "Matthew" },
-    { id: 4, image: "images/chuddy.png", author: "Chuddy" }
+    { id: 4, image: "images/chuddy.png", author: "Chuddy" },
+    { id: 5, image: "images/harrison.png", author: "Harrison" },
+    { id: 6, image: "images/jpeg2.png", author: "Gurshaan" }
 ];
 
 const MAX_GUESSES = 6;
