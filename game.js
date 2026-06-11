@@ -5,7 +5,7 @@ const quotesPool = [
     { id: 4, quote: "That's ball knowledge.", author: "Mason" },
     { id: 5, quote: "Ba is minton about Y", author: "Gurshaan" },
     { id: 6, quote: "Wait, is that the linux penguin?", author: "Mrs. Knibbs" },
-    { id: 7, quote: "Yo can we get “losed” as a qoute", author: "Damien" },
+    { id: 7, quote: "Yo can we get “losed” as a qoute?", author: "Damien" },
     { id: 8, quote: "The divorce isn't going well", author: "Harrison" },
     { id: 9, quote: "Mitosis. a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u̴̒̊͊͠ a̶̋̈̈́̌u̴̞̥̓̓ä̶̒̕͝u̸̾̄̽̀ȕ̷̓̓̔û̷͌̑̓ǟ̸̋̓u", author: "Damien" }
 ];
@@ -356,7 +356,7 @@ function setupKeyboard() {
     const rows = [
         ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
         ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-        ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
+        ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
     ];
     
     rows.forEach(row => {
