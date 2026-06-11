@@ -4,7 +4,7 @@
     --text-color: #ffffff;
     --text-muted: #818384;
     --correct-color: #538d4e;
-    --close-color: #b59f3b; /* Wordle Yellow */
+    --close-color: #b59f3b;
     --incorrect-color: #3a3a3c;
     --border-color: #3a3a3c;
 }
@@ -45,7 +45,18 @@ h1 {
     text-transform: uppercase;
 }
 
-/* Updated to a sleek 2x2 grid layout for mobile screens */
+.logo-title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
 .mode-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -84,7 +95,6 @@ main {
     flex-grow: 1;
 }
 
-/* Content Frame (Handles Text or Images) */
 .content-box {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -106,7 +116,7 @@ main {
     font-style: italic;
     position: relative;
     padding: 0 15px;
-    display: none; /* Injected by JS */
+    display: none;
 }
 
 .quote-text::before, .quote-text::after {
@@ -126,10 +136,9 @@ main {
     max-height: 220px;
     border-radius: 6px;
     object-fit: contain;
-    display: none; /* Injected by JS */
+    display: none;
 }
 
-/* Grid Layout Framework */
 .guess-grid {
     display: flex;
     flex-direction: column;
@@ -143,7 +152,6 @@ main {
     height: 48px;
 }
 
-/* Individual Tiles (Used natively for Wordle, or single full-width layout for names) */
 .tile {
     flex-grow: 1;
     flex-basis: 0;
@@ -164,7 +172,6 @@ main {
 .tile.incorrect { background-color: var(--incorrect-color); border-color: var(--incorrect-color); color: var(--text-muted); }
 .tile.empty { background-color: transparent; }
 
-/* Input Elements */
 .input-area {
     display: flex;
     gap: 10px;
@@ -198,7 +205,6 @@ button.submit-btn {
     text-transform: uppercase;
 }
 
-/* Modals & Toast Alerts */
 .result-modal {
     background: var(--card-bg);
     border: 2px solid var(--border-color);
@@ -228,7 +234,65 @@ button.submit-btn {
     z-index: 100;
 }
 
+.keyboard {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 500px;
+    margin-top: auto;
+    padding-top: 15px;
+}
+
+.keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.key {
+    background-color: #818384;
+    color: white;
+    border: 0;
+    border-radius: 4px;
+    height: 58px;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+    text-transform: uppercase;
+    transition: background-color 0.2s ease;
+}
+
+.key.wide {
+    flex: 1.5;
+    font-size: 0.75rem;
+}
+
+.key.correct { background-color: var(--correct-color); }
+.key.close { background-color: var(--close-color); }
+.key.incorrect { background-color: var(--incorrect-color); color: var(--text-muted); }
+
 @keyframes popIn {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
+}
+.system-message {
+    font-family: 'Inter', sans-serif !important;
+    font-style: normal !important;
+    font-size: 1.1rem !important;
+    font-weight: 600;
+    color: var(--text-muted) !important;
+    text-align: center;
+    padding: 0 !important;
+}
+
+.system-message::before, 
+.system-message::after {
+    display: none !important;
 }

@@ -1,6 +1,3 @@
-// ==========================================================================
-// DATA POOLS (Edit these with your inside jokes!)
-// ==========================================================================
 const quotesPool = [
     { id: 1, quote: "Was that your check?", author: "Luke" },
     { id: 2, quote: "C?", author: "Gurshaan" },
@@ -31,6 +28,9 @@ const MAX_GUESSES = 6;
 let currentMode = 'daily-quote'; 
 let currentAnswer = ""; 
 let currentClueData = null; 
+let currentWordleGuess = "";
+let playedQuotes = [];
+let playedScreenshots = [];
 
 let gameState = {
     guesses: [],
@@ -38,9 +38,6 @@ let gameState = {
     won: false
 };
 
-// ==========================================================================
-// STRING CLOSENESS ALGORITHM (Levenshtein)
-// ==========================================================================
 function getEditDistance(a, b) {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
@@ -71,48 +68,76 @@ function checkCloseness(guess, target) {
     return 'incorrect';
 }
 
-// ==========================================================================
-// ENGINE LOOP INITIALIZATION
-// ==========================================================================
+function handleExhaustion() {
+    const messageContainer = document.getElementById('quote-display');
+    messageContainer.innerText = "No more left, wait for next update.";
+    messageContainer.classList.add('system-message');
+    messageContainer.style.display = 'block';
+    
+    document.getElementById('image-display').style.display = 'none';
+    document.getElementById('guess-form').style.display = 'none';
+    document.getElementById('keyboard').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('guess-grid').innerHTML = '';
+    document.getElementById('result-modal').style.display = 'none';
+}
+
 function initGame() {
     document.getElementById('result-modal').style.display = 'none';
     document.getElementById('guess-form').style.display = 'flex';
     document.getElementById('guess-input').value = '';
     document.getElementById('guess-input').disabled = false;
     document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('keyboard').style.display = 'none';
 
-    // UI View Configuration Switches
-    document.getElementById('quote-display').style.display = 'none';
+    const quoteDisplay = document.getElementById('quote-display');
+    quoteDisplay.style.display = 'none';
+    quoteDisplay.classList.remove('system-message');
     document.getElementById('image-display').style.display = 'none';
 
     const today = new Date();
     const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    currentWordleGuess = "";
 
     if (currentMode === 'daily-quote') {
         currentClueData = getDailyItem(quotesPool, dateKey);
         currentAnswer = currentClueData.author;
-        document.getElementById('quote-display').innerText = currentClueData.quote;
-        document.getElementById('quote-display').style.display = 'block';
+        quoteDisplay.innerText = currentClueData.quote;
+        quoteDisplay.style.display = 'block';
         loadSavedState(`insidle_daily_quote_${dateKey}`);
 
     } else if (currentMode === 'infinite-quote') {
-        currentClueData = quotesPool[Math.floor(Math.random() * quotesPool.length)];
+        const availableQuotes = quotesPool.filter(q => !playedQuotes.includes(q.id));
+        if (availableQuotes.length === 0) {
+            handleExhaustion();
+            return;
+        }
+        currentClueData = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+        playedQuotes.push(currentClueData.id);
         currentAnswer = currentClueData.author;
-        document.getElementById('quote-display').innerText = currentClueData.quote;
-        document.getElementById('quote-display').style.display = 'block';
+        quoteDisplay.innerText = currentClueData.quote;
+        quoteDisplay.style.display = 'block';
         document.getElementById('next-btn').style.display = 'block';
         resetState();
 
     } else if (currentMode === 'wordle') {
         currentClueData = getDailyItem(wordlePool, dateKey);
         currentAnswer = currentClueData.word.toUpperCase();
-        document.getElementById('quote-display').innerText = "Wordle Mode";
-        document.getElementById('quote-display').style.display = 'block';
+        quoteDisplay.innerText = "Wordle Mode";
+        quoteDisplay.style.display = 'block';
+        document.getElementById('guess-form').style.display = 'none';
+        document.getElementById('keyboard').style.display = 'flex';
         loadSavedState(`insidle_daily_wordle_${dateKey}`);
+        setupKeyboard();
 
     } else if (currentMode === 'screenshot') {
-        // Randomized Infinite Setup
-        currentClueData = screenshotPool[Math.floor(Math.random() * screenshotPool.length)];
+        const availableScreenshots = screenshotPool.filter(s => !playedScreenshots.includes(s.id));
+        if (availableScreenshots.length === 0) {
+            handleExhaustion();
+            return;
+        }
+        currentClueData = availableScreenshots[Math.floor(Math.random() * availableScreenshots.length)];
+        playedScreenshots.push(currentClueData.id);
         currentAnswer = currentClueData.author;
         document.getElementById('image-display').src = currentClueData.image;
         document.getElementById('image-display').style.display = 'block';
@@ -177,9 +202,6 @@ function setMode(mode) {
     initGame();
 }
 
-// ==========================================================================
-// GAMEPLAY INPUT & EVALUATION ENGINE
-// ==========================================================================
 function handleGuess(event) {
     event.preventDefault();
     if (gameState.gameOver) return;
@@ -188,31 +210,16 @@ function handleGuess(event) {
     let userGuess = input.value.trim().toUpperCase();
     if (!userGuess) return;
 
-    if (currentMode === 'wordle' && userGuess.length !== currentAnswer.length) {
-        alert(`Guess must be exactly ${currentAnswer.length} letters long.`);
-        return;
-    }
-
     gameState.guesses.push(userGuess);
 
-    if (currentMode === 'wordle') {
-        if (userGuess === currentAnswer) {
-            gameState.won = true;
-            gameState.gameOver = true;
-        } else if (gameState.guesses.length >= MAX_GUESSES) {
-            gameState.gameOver = true;
-        }
-    } else {
-        const result = checkCloseness(userGuess, currentAnswer);
-        if (result === 'correct') {
-            gameState.won = true;
-            gameState.gameOver = true;
-        } else if (gameState.guesses.length >= MAX_GUESSES) {
-            gameState.gameOver = true;
-        }
+    const result = checkCloseness(userGuess, currentAnswer);
+    if (result === 'correct') {
+        gameState.won = true;
+        gameState.gameOver = true;
+    } else if (gameState.guesses.length >= MAX_GUESSES) {
+        gameState.gameOver = true;
     }
 
-    // Save progression only if it's a daily mode pipeline
     if (currentMode !== 'infinite-quote' && currentMode !== 'screenshot') {
         const today = new Date();
         const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
@@ -224,6 +231,121 @@ function handleGuess(event) {
     input.value = '';
 
     if (gameState.gameOver) endGame();
+}
+
+function handleWordleInput(key) {
+    if (gameState.gameOver) return;
+    if (key === 'ENTER' || key === 'Enter') {
+        submitWordleGuess();
+    } else if (key === 'BACKSPACE' || key === 'Backspace') {
+        currentWordleGuess = currentWordleGuess.slice(0, -1);
+        updateGridDisplay();
+    } else if (/^[a-zA-Z]$/.test(key)) {
+        if (currentWordleGuess.length < currentAnswer.length) {
+            currentWordleGuess += key.toUpperCase();
+            updateGridDisplay();
+        }
+    }
+}
+
+function submitWordleGuess() {
+    if (currentWordleGuess.length !== currentAnswer.length) {
+        alert(`Guess must be exactly ${currentAnswer.length} letters long.`);
+        return;
+    }
+    
+    gameState.guesses.push(currentWordleGuess);
+    
+    if (currentWordleGuess === currentAnswer) {
+        gameState.won = true;
+        gameState.gameOver = true;
+    } else if (gameState.guesses.length >= MAX_GUESSES) {
+        gameState.gameOver = true;
+    }
+    
+    currentWordleGuess = "";
+    
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    localStorage.setItem(`insidle_daily_wordle_${dateKey}`, JSON.stringify(gameState));
+    
+    updateGridDisplay();
+    updateKeyboardKeyStatuses();
+    
+    if (gameState.gameOver) endGame();
+}
+
+function setupKeyboard() {
+    const keyboardContainer = document.getElementById('keyboard');
+    keyboardContainer.innerHTML = '';
+    
+    const rows = [
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
+    ];
+    
+    rows.forEach(row => {
+        const rowElement = document.createElement('div');
+        rowElement.className = 'keyboard-row';
+        
+        row.forEach(key => {
+            const keyElement = document.createElement('button');
+            keyElement.innerText = key;
+            keyElement.setAttribute('data-key', key);
+            keyElement.className = 'key';
+            if (key === 'ENTER' || key === 'BACKSPACE') {
+                keyElement.classList.add('wide');
+            }
+            
+            keyElement.addEventListener('click', () => {
+                handleWordleInput(key);
+            });
+            
+            rowElement.appendChild(keyElement);
+        });
+        
+        keyboardContainer.appendChild(rowElement);
+    });
+    
+    updateKeyboardKeyStatuses();
+}
+
+function updateKeyboardKeyStatuses() {
+    const statuses = {};
+    for (let i = 0; i < gameState.guesses.length; i++) {
+        const guess = gameState.guesses[i];
+        for (let j = 0; j < guess.length; j++) {
+            const char = guess[j];
+            if (currentAnswer[j] === char) {
+                statuses[char] = 'correct';
+            } else if (currentAnswer.includes(char)) {
+                if (statuses[char] !== 'correct') {
+                    statuses[char] = 'close';
+                }
+            } else {
+                if (!statuses[char]) {
+                    statuses[char] = 'incorrect';
+                }
+            }
+        }
+    }
+    
+    const keys = document.querySelectorAll('.key');
+    keys.forEach(keyElement => {
+        const keyText = keyElement.getAttribute('data-key');
+        if (keyText && statuses[keyText]) {
+            keyElement.className = `key ${statuses[keyText]}`;
+            if (keyText === 'ENTER' || keyText === 'BACKSPACE') {
+                keyElement.classList.add('wide');
+            }
+        } else if (keyText) {
+            keyElement.className = 'key';
+            if (keyText === 'ENTER' || keyText === 'BACKSPACE') {
+                keyElement.classList.add('wide');
+            }
+        }
+    });
 }
 
 function updateGridDisplay() {
@@ -258,6 +380,9 @@ function updateGridDisplay() {
                 if (currentGuessStr) {
                     tile.innerText = currentGuessStr[j] || '';
                     tile.className = `tile ${tileStatuses[j]}`;
+                } else if (i === gameState.guesses.length) {
+                    tile.innerText = currentWordleGuess[j] || '';
+                    tile.className = 'tile empty';
                 } else {
                     tile.innerText = '';
                     tile.className = 'tile empty';
@@ -280,6 +405,7 @@ function updateGridDisplay() {
 function endGame() {
     document.getElementById('guess-input').disabled = true;
     document.getElementById('guess-form').style.display = 'none';
+    document.getElementById('keyboard').style.display = 'none';
     
     const modal = document.getElementById('result-modal');
     const title = document.getElementById('result-title');
@@ -302,9 +428,6 @@ function handleNextRound() {
     }
 }
 
-// ==========================================================================
-// RENDERING SHARE MATRICES
-// ==========================================================================
 function shareResult() {
     let shareText = `Insidle - Mode: ${currentMode.toUpperCase()}\n`;
     
@@ -336,5 +459,10 @@ function shareResult() {
         setTimeout(() => { toast.style.display = 'none'; }, 2500);
     });
 }
+
+window.addEventListener('keydown', (e) => {
+    if (currentMode !== 'wordle' || gameState.gameOver) return;
+    handleWordleInput(e.key);
+});
 
 window.onload = initGame;

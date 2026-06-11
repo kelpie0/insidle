@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" href="images/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insidle</title>
@@ -9,13 +8,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 <body>
 
     <div class="toast" id="toast">Copied grid to clipboard</div>
 
     <header>
-        <h1>Insidle</h1>
+        <div class="logo-title-container">
+            <img src="images/logo.png" alt="Insidle Logo" class="header-logo">
+            <h1>Insidle</h1>
+        </div>
         <div class="mode-container">
             <button class="mode-btn active" id="mode-daily-quote" onclick="setMode('daily-quote')">Daily Quote</button>
             <button class="mode-btn" id="mode-infinite-quote" onclick="setMode('infinite-quote')">Inf Quote</button>
@@ -31,7 +34,7 @@
         </div>
 
         <div class="guess-grid" id="guess-grid">
-            </div>
+        </div>
 
         <div class="result-modal" id="result-modal">
             <div class="result-title" id="result-title">Correct</div>
@@ -44,6 +47,8 @@
             <input type="text" id="guess-input" placeholder="Your guess..." autocomplete="off" required>
             <button type="submit" class="submit-btn">Guess</button>
         </form>
+
+        <div class="keyboard" id="keyboard"></div>
     </main>
 
     <script src="game.js"></script>
