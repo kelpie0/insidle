@@ -111,7 +111,7 @@ let gameState = {
     won: false
 };
 
-// --- AUDIO CONFIGURATION ENGINE ---
+// --- SYNTHETIC AUDIO CONFIGURATION ENGINE ---
 let audioCtx = null;
 
 function initAudio() {
@@ -127,7 +127,6 @@ function playTypeSound() {
     const gain = audioCtx.createGain();
     
     osc.type = 'sine';
-    // Add subtle structural frequency variation to simulate real mechanical keyboard clicks
     osc.frequency.setValueAtTime(550 + Math.random() * 150, audioCtx.currentTime);
     
     gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
@@ -137,6 +136,25 @@ function playTypeSound() {
     gain.connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + 0.04);
+}
+
+function playClickSound() {
+    initAudio();
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    // Clean, crisp high-pitch modern transient click sound
+    osc.frequency.setValueAtTime(850, audioCtx.currentTime);
+    
+    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.03);
 }
 
 function playFailSound() {
@@ -162,7 +180,6 @@ function playWinSound() {
     initAudio();
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
-    // Cheerful rising 4-note retro arpeggio cascade
     const notes = [293.66, 349.23, 440.00, 587.33]; // D4, F4, A4, D5
     
     notes.forEach((freq, index) => {
@@ -791,23 +808,28 @@ customStyles.innerHTML = `
 `;
 document.head.appendChild(customStyles);
 
-// Wire up global input listener for regular typing modes (Quotes & Screenshots)
-document.addEventListener('DOMContentLoaded', () => {
+// Helper helper function to capture global input and generic button audio clicks
+function attachGlobalListeners() {
     const textInput = document.getElementById('guess-input');
     if (textInput) {
         textInput.addEventListener('input', () => {
             playTypeSound();
         });
     }
-});
+
+    // Capture every single button click across the web application
+    document.removeEventListener('click', handleGlobalUiClicks);
+    document.addEventListener('click', handleGlobalUiClicks);
+}
+
+function handleGlobalUiClicks(e) {
+    // If it's a standard button but NOT an in-game custom Wordle keyboard key (which manages its own distinct type audios)
+    if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('key')) {
+        playClickSound();
+    }
+}
 
 window.onload = () => {
     initGame();
-    // Fallback binding if DOMContentLoaded already fired before script execution
-    const textInput = document.getElementById('guess-input');
-    if (textInput) {
-        textInput.addEventListener('input', () => {
-            playTypeSound();
-        });
-    }
+    attachGlobalListeners();
 };
