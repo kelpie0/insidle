@@ -23,7 +23,7 @@ const quotesPool = [
     { id: 22, quote: ".edit deer", author: "NotSoBot" },
     { id: 23, quote: "Even using scientific notation wouldn't do it justice because the exponent itself would be a number that requires its own scientific notation.", author: "BoltBot" },
     { id: 24, quote: "bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo", author: "bogo" },
-    { id: 25, quote: "bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus ", author: "bogo" },
+    { id: 25, quote: "bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus ", author: "bogo" },
 ];
 
 const wordlePool = [
@@ -145,7 +145,6 @@ function playClickSound() {
     const gain = audioCtx.createGain();
     
     osc.type = 'sine';
-    // Clean, crisp high-pitch modern transient click sound
     osc.frequency.setValueAtTime(850, audioCtx.currentTime);
     
     gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
@@ -199,6 +198,30 @@ function playWinSound() {
     });
 }
 
+// Procedural Synthetic Meow Engine for Callum Easter Egg
+function playMeowSound() {
+    initAudio();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(380, now);
+    osc.frequency.exponentialRampToValueAtTime(820, now + 0.12);
+    osc.frequency.linearRampToValueAtTime(680, now + 0.42);
+    
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.08);
+    gain.gain.linearRampToValueAtTime(0.10, now + 0.28);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.45);
+}
+
 function getEditDistance(a, b) {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
@@ -244,6 +267,8 @@ function handleExhaustion() {
 }
 
 function triggerDailyCelebration(modeName, attempts) {
+    if (currentAnswer.toUpperCase() === 'DAMIEN') return; // Handled exclusively by Damien Easter Egg
+    
     const overlay = document.createElement('div');
     overlay.className = 'celebration-overlay';
 
@@ -257,6 +282,53 @@ function triggerDailyCelebration(modeName, attempts) {
     setTimeout(() => {
         overlay.remove();
     }, 2000);
+}
+
+// --- GLOBAL EASTER EGG MANAGER ---
+function handleGameWinEasterEggs() {
+    const answerClean = currentAnswer.toUpperCase();
+    
+    // 1. Callum Meow Sound Trigger
+    if (answerClean === 'CALLUM') {
+        playMeowSound();
+    } else {
+        playWinSound();
+    }
+
+    // 2. Gurshaan "C" Animation Trigger
+    if (answerClean === 'GURSHAAN') {
+        const titleElement = document.querySelector('h1') || document.querySelector('.header h1') || document.getElementById('logo');
+        if (titleElement) {
+            const originalContent = titleElement.innerHTML;
+            titleElement.innerHTML = `<span class="gurshaan-egg-c">C</span>`;
+            setTimeout(() => {
+                titleElement.innerHTML = originalContent;
+            }, 2200);
+        }
+    }
+
+    // 3. Damien "Umazing!" Animation Trigger
+    if (answerClean === 'DAMIEN') {
+        const overlay = document.createElement('div');
+        overlay.className = 'celebration-overlay damien-egg-overlay';
+
+        const textContainer = document.createElement('div');
+        textContainer.className = 'damien-egg-text';
+        
+        const phrase = "UMAZING!";
+        for (let i = 0; i < phrase.length; i++) {
+            const letterSpan = document.createElement('span');
+            letterSpan.innerText = phrase[i];
+            letterSpan.className = 'damien-egg-letter';
+            letterSpan.style.animationDelay = `${i * 0.08}s`;
+            textContainer.appendChild(letterSpan);
+        }
+        
+        overlay.appendChild(textContainer);
+        document.body.appendChild(overlay);
+
+        setTimeout(() => { overlay.remove(); }, 3200);
+    }
 }
 
 function initGame() {
@@ -435,7 +507,7 @@ function handleGuess(event) {
     if (result === 'correct') {
         gameState.won = true;
         gameState.gameOver = true;
-        playWinSound();
+        handleGameWinEasterEggs();
         if (currentMode === 'daily-quote' && (gameState.guesses.length === 1 || gameState.guesses.length === 2)) {
             triggerDailyCelebration('QUOTE', gameState.guesses.length);
         }
@@ -487,7 +559,7 @@ function submitWordleGuess() {
     if (currentWordleGuess === currentAnswer) {
         gameState.won = true;
         gameState.gameOver = true;
-        playWinSound();
+        handleGameWinEasterEggs();
         if (currentMode === 'wordle' && (gameState.guesses.length === 1 || gameState.guesses.length === 2)) {
             triggerDailyCelebration('WORDLE', gameState.guesses.length);
         }
@@ -568,11 +640,14 @@ function updateKeyboardKeyStatuses() {
         }
     }
     
+    const isMasonTheme = currentAnswer.toUpperCase() === 'MASON';
     const keys = document.querySelectorAll('.key');
     keys.forEach(keyElement => {
         const keyText = keyElement.getAttribute('data-key');
         if (keyText && statuses[keyText]) {
-            keyElement.className = `key ${statuses[keyText]}`;
+            let statusClass = statuses[keyText];
+            if (isMasonTheme && statusClass === 'correct') statusClass = 'correct mason-mode';
+            keyElement.className = `key ${statusClass}`;
             if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '⌫') {
                 keyElement.classList.add('wide');
             }
@@ -586,6 +661,8 @@ function updateKeyboardKeyStatuses() {
 }
 
 function updateGridDisplay() {
+    const isMasonTheme = currentAnswer.toUpperCase() === 'MASON';
+
     for (let i = 0; i < MAX_GUESSES; i++) {
         const currentGuessStr = gameState.guesses[i];
         
@@ -616,7 +693,9 @@ function updateGridDisplay() {
                 const tile = document.getElementById(`row-${i}-tile-${j}`);
                 if (currentGuessStr) {
                     tile.innerText = currentGuessStr[j] || '';
-                    tile.className = `tile ${tileStatuses[j]}`;
+                    let targetStatus = tileStatuses[j];
+                    if (isMasonTheme && targetStatus === 'correct') targetStatus = 'correct mason-mode';
+                    tile.className = `tile ${targetStatus}`;
                 } else if (i === gameState.guesses.length) {
                     tile.innerText = currentWordleGuess[j] || '';
                     tile.className = 'tile empty';
@@ -629,7 +708,8 @@ function updateGridDisplay() {
             const tile = document.getElementById(`row-${i}-tile-0`);
             if (currentGuessStr) {
                 tile.innerText = currentGuessStr;
-                const matchResult = checkCloseness(currentGuessStr, currentAnswer);
+                let matchResult = checkCloseness(currentGuessStr, currentAnswer);
+                if (isMasonTheme && matchResult === 'correct') matchResult = 'correct mason-mode';
                 tile.className = `tile ${matchResult}`;
             } else {
                 tile.innerText = '';
@@ -703,6 +783,8 @@ function handleNextRound() {
 
 function shareResult() {
     let shareText = `Insidle - Mode: ${currentMode.toUpperCase()}\n`;
+    const isMasonTheme = currentAnswer.toUpperCase() === 'MASON';
+    const checkIcon = isMasonTheme ? '🟧' : '🟩';
     
     for (let i = 0; i < gameState.guesses.length; i++) {
         const guess = gameState.guesses[i];
@@ -712,15 +794,15 @@ function shareResult() {
             let rowIcons = Array(currentAnswer.length).fill('🟥');
 
             for (let j = 0; j < currentAnswer.length; j++) {
-                if (guess[j] === currentAnswer[j]) { rowIcons[j] = '🟩'; targetLetterCounts[guess[j]]--; }
+                if (guess[j] === currentAnswer[j]) { rowIcons[j] = checkIcon; targetLetterCounts[guess[j]]--; }
             }
             for (let j = 0; j < currentAnswer.length; j++) {
-                if (rowIcons[j] !== '🟩' && targetLetterCounts[guess[j]] > 0) { rowIcons[j] = '🟨'; targetLetterCounts[guess[j]]--; }
+                if (rowIcons[j] !== '🟩' && rowIcons[j] !== '🟧' && targetLetterCounts[guess[j]] > 0) { rowIcons[j] = '🟨'; targetLetterCounts[guess[j]]--; }
             }
             shareText += rowIcons.join('') + '\n';
         } else {
             const status = checkCloseness(guess, currentAnswer);
-            shareText += (status === 'correct') ? '🟩\n' : (status === 'close') ? '🟨\n' : '🟥\n';
+            shareText += (status === 'correct') ? `${checkIcon}\n` : (status === 'close') ? '🟨\n' : '🟥\n';
         }
     }
     
@@ -738,6 +820,7 @@ window.addEventListener('keydown', (e) => {
     handleWordleInput(e.key);
 });
 
+// --- CSS STRUCTURAL INJECTIONS FOR THE LORE INJECTOR ---
 const customStyles = document.createElement('style');
 customStyles.innerHTML = `
     .wordle-mode-header {
@@ -755,20 +838,15 @@ customStyles.innerHTML = `
         margin: 5px 0 15px 0 !important;
     }
     .wordle-mode-header::before,
-    .wordle-mode-header::after {
-        display: none !important;
-    }
+    .wordle-mode-header::after { display: none !important; }
 
     .celebration-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
         background-color: rgba(0, 0, 0, 0.6);
         display: flex;
-        justify-content: center;
-        align-items: center;
+        justify-content: center; align-items: center;
         z-index: 99999;
         animation: celebrationAnim 2s ease-in-out forwards; 
     }
@@ -776,39 +854,73 @@ customStyles.innerHTML = `
     .celebration-text {
         color: #ffffff;
         font-family: 'Inter', sans-serif;
-        font-size: 2.8rem;
-        font-weight: 900;
-        text-align: center;
-        text-transform: uppercase;
+        font-size: 2.8rem; font-weight: 900;
+        text-align: center; text-transform: uppercase;
         letter-spacing: 2px;
     }
+    .celebration-text span { color: #2ed573; }
 
-    .celebration-text span {
-        color: #2ed573; 
+    /* EASTER EGG: MASON MODE OVERRIDE (ORANGE OVER GREEN) */
+    .tile.correct.mason-mode, .key.correct.mason-mode {
+        background-color: #ff9f43 !important;
+        border-color: #ff9f43 !important;
+        color: #ffffff !important;
+    }
+
+    /* EASTER EGG: GURSHAAN "C" JUMP */
+    .gurshaan-egg-c {
+        color: #00a8ff !important;
+        display: inline-block;
+        font-size: 3.5rem;
+        font-weight: 900;
+        animation: gurshaanBounceC 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    @keyframes gurshaanBounceC {
+        0% { transform: scale(1) translateY(0); }
+        15% { transform: scale(1.4) translateY(0); }
+        30% { transform: scale(1.4) translateY(-45px); }
+        45% { transform: scale(1.4) translateY(0); }
+        60% { transform: scale(1.4) translateY(-20px); }
+        75% { transform: scale(1.4) translateY(0); }
+        90% { transform: scale(1.1) translateY(0); }
+        100% { transform: scale(1) translateY(0); }
+    }
+
+    /* EASTER EGG: DAMIEN WAVE SYSTEM */
+    .damien-egg-overlay {
+        animation: celebrationAnim 3.2s ease-in-out forwards !important;
+    }
+    .damien-egg-text {
+        display: flex;
+        gap: 6px;
+        justify-content: center; align-items: center;
+    }
+    .damien-egg-letter {
+        display: inline-block;
+        color: #9b59b6; /* Purple text */
+        font-family: 'Inter', sans-serif;
+        font-size: 4rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        animation: damienWaveAnim 1.1s ease-in-out infinite;
+    }
+
+    @keyframes damienWaveAnim {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-35px); }
     }
 
     @keyframes celebrationAnim {
-        0% {
-            opacity: 0;
-            transform: scale(0.75);
-        }
-        10% {
-            opacity: 1;
-            transform: scale(1); 
-        }
-        85% {
-            opacity: 1;
-            transform: scale(1); 
-        }
-        100% {
-            opacity: 0;
-            transform: scale(0.85); 
-        }
+        0% { opacity: 0; transform: scale(0.75); }
+        10% { opacity: 1; transform: scale(1); }
+        88% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.85); }
     }
 `;
 document.head.appendChild(customStyles);
 
-// Helper helper function to capture global input and generic button audio clicks
 function attachGlobalListeners() {
     const textInput = document.getElementById('guess-input');
     if (textInput) {
@@ -817,13 +929,11 @@ function attachGlobalListeners() {
         });
     }
 
-    // Capture every single button click across the web application
     document.removeEventListener('click', handleGlobalUiClicks);
     document.addEventListener('click', handleGlobalUiClicks);
 }
 
 function handleGlobalUiClicks(e) {
-    // If it's a standard button but NOT an in-game custom Wordle keyboard key (which manages its own distinct type audios)
     if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('key')) {
         playClickSound();
     }
