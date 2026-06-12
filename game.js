@@ -225,7 +225,6 @@ function physicsLoop() {
             let b1 = bogoPhysicsObjects[i];
             let b2 = bogoPhysicsObjects[j];
 
-            // Treat bogos as circles for smoother bouncing
             let r1 = b1.width / 2;
             let r2 = b2.width / 2;
 
@@ -240,11 +239,9 @@ function physicsLoop() {
             let minDist = r1 + r2;
 
             if (distance < minDist && distance > 0) {
-                // Collision Normal
                 let nx = dx / distance;
                 let ny = dy / distance;
 
-                // Resolve positional overlap
                 let overlap = minDist - distance;
                 if (!b1.isDragging) {
                     b1.x -= nx * (overlap / 2);
@@ -255,18 +252,15 @@ function physicsLoop() {
                     b2.y += ny * (overlap / 2);
                 }
 
-                // Calculate relative velocity
                 let dvx = b2.vx - b1.vx;
                 let dvy = b2.vy - b1.vy;
 
-                // Velocity along the normal
                 let velAlongNormal = dvx * nx + dvy * ny;
 
-                // Do not resolve if velocities are separating
                 if (velAlongNormal < 0) {
-                    let restitution = 0.75; // Bounciness between objects
+                    let restitution = 0.75; 
                     let impulse = -(1 + restitution) * velAlongNormal;
-                    impulse /= 2; // Assuming equal mass
+                    impulse /= 2; 
 
                     let impulseX = impulse * nx;
                     let impulseY = impulse * ny;
@@ -329,6 +323,39 @@ function physicsLoop() {
     });
     
     requestAnimationFrame(physicsLoop);
+}
+
+// --- BOGOVIRUS INFECTION SUB-SYSTEM ---
+function applyBogovirusInfection() {
+    if (localStorage.getItem('bogovirus_infected') !== 'true') return;
+
+    if (!document.getElementById('bogovirus-core-override')) {
+        const styleOverride = document.createElement('style');
+        styleOverride.id = 'bogovirus-core-override';
+        styleOverride.innerHTML = `
+            :root { --correct-color: #00a8ff !important; }
+            .celebration-text span { color: #00a8ff !important; }
+            .tile.correct, .key.correct { background-color: #00a8ff !important; border-color: #00a8ff !important; }
+        `;
+        document.head.appendChild(styleOverride);
+    }
+
+    function transformDOMText(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (node.nodeValue.trim().length > 0) {
+                node.nodeValue = "bogovirus";
+            }
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+            if (node.tagName === 'INPUT') {
+                node.placeholder = "bogovirus";
+                if (node.value) node.value = "bogovirus";
+            }
+            for (let child of node.childNodes) {
+                transformDOMText(child);
+            }
+        }
+    }
+    transformDOMText(document.body);
 }
 
 // --- SYNTHETIC AUDIO CONFIGURATION ENGINE ---
@@ -483,9 +510,11 @@ function handleExhaustion() {
     document.getElementById('next-btn').style.display = 'none';
     document.getElementById('guess-grid').innerHTML = '';
     document.getElementById('result-modal').style.display = 'none';
+    applyBogovirusInfection();
 }
 
 function triggerDailyCelebration(modeName, attempts) {
+    if (localStorage.getItem('bogovirus_infected') === 'true') return;
     const skipOverlays = ['DAMIEN', 'MRS. KNIBBS', 'RILEY', 'CALLUM', 'BOGO', 'MARKIPLIER', '3FS'];
     if (skipOverlays.includes(currentAnswer.toUpperCase())) return;
     
@@ -508,6 +537,11 @@ function triggerDailyCelebration(modeName, attempts) {
 function handleGameWinEasterEggs() {
     const answerClean = currentAnswer.toUpperCase();
     
+    if (currentClueData && currentClueData.id === 25) {
+        localStorage.setItem('bogovirus_infected', 'true');
+        applyBogovirusInfection();
+    }
+
     if (answerClean === 'CALLUM') {
         playMeowSound();
     } else {
@@ -671,7 +705,12 @@ function initGame() {
         loadSavedState(`insidle_daily_quote_${dateKey}`);
 
     } else if (currentMode === 'infinite-quote') {
-        const availableQuotes = quotesPool.filter(q => !playedQuotes.includes(q.id));
+        let availableQuotes = quotesPool.filter(q => !playedQuotes.includes(q.id));
+        
+        if (localStorage.getItem('bogovirus_infected') === 'true') {
+            availableQuotes = quotesPool.filter(q => q.id === 24 || q.id === 25);
+        }
+
         if (availableQuotes.length === 0) {
             handleExhaustion();
             return;
@@ -740,6 +779,7 @@ function initGame() {
     setupGrid();
     updateGridDisplay();
     if (gameState.gameOver) endGame();
+    applyBogovirusInfection();
 }
 
 function getDailyItem(pool, dateString) {
@@ -930,6 +970,7 @@ function setupKeyboard() {
     });
     
     updateKeyboardKeyStatuses();
+    applyBogovirusInfection();
 }
 
 function updateKeyboardKeyStatuses() {
@@ -1029,6 +1070,7 @@ function updateGridDisplay() {
             }
         }
     }
+    applyBogovirusInfection();
 }
 
 function endGame() {
@@ -1071,6 +1113,7 @@ function endGame() {
             modalContent.appendChild(infBtn);
         }
     }
+    applyBogovirusInfection();
 }
 
 function handleNextRound() {
@@ -1096,7 +1139,8 @@ function handleNextRound() {
 function shareResult() {
     let shareText = `Insidle - Mode: ${currentMode.toUpperCase()}\n`;
     const isMasonTheme = currentAnswer.toUpperCase() === 'MASON';
-    const checkIcon = isMasonTheme ? '🟧' : '🟩';
+    const isInfected = localStorage.getItem('bogovirus_infected') === 'true';
+    const checkIcon = isInfected ? '🟦' : (isMasonTheme ? '🟧' : '🟩');
     
     for (let i = 0; i < gameState.guesses.length; i++) {
         const guess = gameState.guesses[i];
@@ -1109,7 +1153,7 @@ function shareResult() {
                 if (guess[j] === currentAnswer[j]) { rowIcons[j] = checkIcon; targetLetterCounts[guess[j]]--; }
             }
             for (let j = 0; j < currentAnswer.length; j++) {
-                if (rowIcons[j] !== '🟩' && rowIcons[j] !== '🟧' && targetLetterCounts[guess[j]] > 0) { rowIcons[j] = '🟨'; targetLetterCounts[guess[j]]--; }
+                if (rowIcons[j] !== '🟩' && rowIcons[j] !== '🟧' && rowIcons[j] !== '🟦' && targetLetterCounts[guess[j]] > 0) { rowIcons[j] = '🟨'; targetLetterCounts[guess[j]]--; }
             }
             shareText += rowIcons.join('') + '\n';
         } else {
@@ -1118,7 +1162,11 @@ function shareResult() {
         }
     }
     
-    shareText += `Score: ${gameState.won ? gameState.guesses.length : 'X'}/${MAX_GUESSES}\nLink: ${window.location.href}`;
+    if (isInfected) {
+        shareText = "bogovirus bogovirus bogovirus\nbogovirus\nbogovirus";
+    } else {
+        shareText += `Score: ${gameState.won ? gameState.guesses.length : 'X'}/${MAX_GUESSES}\nLink: ${window.location.href}`;
+    }
     
     navigator.clipboard.writeText(shareText).then(() => {
         const toast = document.getElementById('toast');
@@ -1365,4 +1413,5 @@ function handleGlobalUiClicks(e) {
 window.onload = () => {
     initGame();
     attachGlobalListeners();
+    applyBogovirusInfection();
 };
