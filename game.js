@@ -95,13 +95,13 @@ const screenshotPool = [
     { id: 9, image: "images/crack.png", author: "Callum" },
 ];
 
-// --- SLOTDLE PRIZE REGISTRY MATRIX ---
+// --- SLOTDLE PRIZE PROBABILITY MATRIX ENGINE ---
 const slotsPool = [
-    { name: "Luke's Check", rarity: "common", color: "#a4b0be", value: 15 },
-    { name: "Linux Penguin", rarity: "uncommon", color: "#2ed573", value: 40 },
-    { name: "Cabinet (60x165cm)", rarity: "rare", color: "#1e90ff", value: 120 },
-    { name: "Peanut Butter Jar", rarity: "epic", color: "#9b59b6", value: 350 },
-    { name: "Golden Bogo Token", rarity: "legendary", color: "#ffa502", value: 1000 }
+    { name: "Riley", rarity: "common", color: "#818384", value: 15, weight: 50 },
+    { name: "Mason", rarity: "uncommon", color: "#6aaa64", value: 40, weight: 30 },
+    { name: "Gurshaan", rarity: "rare", color: "#45aaf2", value: 120, weight: 14 },
+    { name: "Callum", rarity: "epic", color: "#a55eea", value: 350, weight: 5 },
+    { name: "Damien", rarity: "legendary", color: "#c9b458", value: 1000, weight: 1 }
 ];
 
 const MAX_GUESSES = 6;
@@ -413,7 +413,7 @@ function handleExhaustion() {
     document.getElementById('guess-form').style.display = 'none';
     document.getElementById('keyboard').style.display = 'none';
     document.getElementById('next-btn').style.display = 'none';
-    document.getElementById('guess-grid').innerHTML = '';
+    document.getElementById('guess-grid-container').style.display = 'none';
     document.getElementById('result-modal').style.display = 'none';
 }
 
@@ -552,9 +552,9 @@ function handleGameWinEasterEggs() {
 function setupTopRightMenu() {
     if (document.getElementById('sleek-menu-wrapper')) return;
 
-    // Suppress legacy mode buttons if present in DOM layout
-    const oldContainer = document.getElementById('mode-selector') || document.querySelector('.mode-buttons');
-    if (oldContainer) oldContainer.style.display = 'none';
+    // Hard wipe old static selector buttons to prevent duplication bugs
+    const legacySelector = document.getElementById('mode-selector') || document.querySelector('.mode-buttons');
+    if (legacySelector) legacySelector.remove();
 
     const menuWrapper = document.createElement('div');
     menuWrapper.id = 'sleek-menu-wrapper';
@@ -578,7 +578,7 @@ function setupTopRightMenu() {
         { id: 'wordle', label: 'Wordle' },
         { id: 'infinite-wordle', label: 'Infinite Wordle' },
         { id: 'screenshot', label: 'Screenshot' },
-        { id: 'slotdle', label: 'Slotdle Machine' }
+        { id: 'slotdle', label: 'Slotdle' }
     ];
 
     configurations.forEach(config => {
@@ -614,10 +614,18 @@ function setupSlotdleDOM() {
     slotContainer.id = 'slotdle-view-container';
     slotContainer.style.display = 'none';
 
+    // Calculate dynamically updating percentages index data directly out of pools constants
+    const totalW = slotsPool.reduce((acc, item) => acc + item.weight, 0);
+    const legendIndexString = slotsPool.map(item => {
+        const pct = ((item.weight / totalW) * 100).toFixed(0);
+        return `<span style="color: ${item.color}">${item.rarity.toUpperCase()} (${pct}%)</span>`;
+    }).join(' • ');
+
     slotContainer.innerHTML = `
         <div id="slotdle-header-block">
             <div id="slotdle-title-label">SLOTDLE</div>
             <div id="slotdle-cash-counter">$0</div>
+            <div id="slotdle-odds-index">${legendIndexString}</div>
         </div>
         
         <div id="slotdle-machine-wrapper">
@@ -632,9 +640,9 @@ function setupSlotdleDOM() {
         <div id="slotdle-inventory-grid"></div>
     `;
 
-    const grid = document.getElementById('guess-grid');
-    if (grid && grid.parentNode) {
-        grid.parentNode.insertBefore(slotContainer, grid);
+    const targetContainer = document.getElementById('guess-grid-container') || document.getElementById('guess-grid');
+    if (targetContainer && targetContainer.parentNode) {
+        targetContainer.parentNode.insertBefore(slotContainer, targetContainer);
     } else {
         document.body.appendChild(slotContainer);
     }
@@ -653,6 +661,10 @@ function syncMenuUISelection() {
 }
 
 function initGame() {
+    // Force immediate purge of legacy static menus
+    const legacySelector = document.getElementById('mode-selector') || document.querySelector('.mode-buttons');
+    if (legacySelector) legacySelector.remove();
+
     setupTopRightMenu();
     setupSlotdleDOM();
     syncMenuUISelection();
@@ -664,7 +676,10 @@ function initGame() {
     document.getElementById('next-btn').style.display = 'none';
     document.getElementById('keyboard').style.display = 'none';
     document.getElementById('slotdle-view-container').style.display = 'none';
-    document.getElementById('guess-grid').style.display = 'flex';
+
+    // Target parent layouts container bounding boxes safely to prevent ghost borders
+    const mainGridContainer = document.getElementById('guess-grid-container') || document.getElementById('guess-grid');
+    if (mainGridContainer) mainGridContainer.style.display = 'flex';
 
     const oldInfBtn = document.getElementById('modal-infinite-wordle-btn');
     if (oldInfBtn) oldInfBtn.remove();
@@ -687,7 +702,6 @@ function initGame() {
 
     } else if (currentMode === 'infinite-quote') {
         let availableQuotes = quotesPool.filter(q => !playedQuotes.includes(q.id));
-        // FIX: Instead of running out, recycle pool instantly
         if (availableQuotes.length === 0) {
             playedQuotes = [];
             availableQuotes = quotesPool;
@@ -748,12 +762,12 @@ function initGame() {
         resetState();
 
     } else if (currentMode === 'slotdle') {
-        document.getElementById('guess-grid').style.display = 'none';
+        if (mainGridContainer) mainGridContainer.style.display = 'none';
         document.getElementById('guess-form').style.display = 'none';
         document.getElementById('slotdle-view-container').style.display = 'block';
         renderSlotdleInventoryView();
         document.getElementById('slotdle-cash-counter').innerText = `$${slotCurrency}`;
-        buildSlotdleReelItems(slotsPool[0]); // Initial safe placeholder node
+        buildSlotdleReelItems(slotsPool[0]); 
     }
 
     if (currentMode !== 'slotdle') {
@@ -763,23 +777,20 @@ function initGame() {
     }
 }
 
-// --- SLOTDLE SYSTEM CORE LOGIC ---
+// --- SLOTDLE ENGINE PROBABILITY CALCULATION CORE ---
 function buildSlotdleReelItems(targetWinner) {
     const strip = document.getElementById('slotdle-reel-strip');
     strip.innerHTML = '';
     
-    // Generate a long linear row list array to scroll through (45 items total)
     for (let i = 0; i < 42; i++) {
         const placeholder = slotsPool[Math.floor(Math.random() * slotsPool.length)];
         const node = createReelNode(placeholder);
         strip.appendChild(node);
     }
     
-    // Exact targeted terminal node sequence
     const winningNode = createReelNode(targetWinner);
     strip.appendChild(winningNode);
 
-    // Padding safety nodes past target boundary
     strip.appendChild(createReelNode(slotsPool[1 % slotsPool.length]));
     strip.appendChild(createReelNode(slotsPool[2 % slotsPool.length]));
 }
@@ -788,7 +799,7 @@ function createReelNode(itemData) {
     const node = document.createElement('div');
     node.className = 'slot-reel-cell';
     node.innerText = itemData.name;
-    node.style.color = itemData.color;
+    node.style.color = '#ffffff';
     node.style.borderLeft = `5px solid ${itemData.color}`;
     return node;
 }
@@ -802,43 +813,47 @@ function runSlotdleSpinEngine() {
     const strip = document.getElementById('slotdle-reel-strip');
     
     triggerBtn.disabled = true;
-    viewport.className = ""; // Wipe former glowing profiles
+    viewport.style.borderColor = '#3a3a3c';
     
-    // Choose winning object by rolling weights or uniform distributions
-    const wonItem = slotsPool[Math.floor(Math.random() * slotsPool.length)];
+    // Exact mathematical distribution calculator using constants weight indexes
+    const totalWeight = slotsPool.reduce((acc, item) => acc + item.weight, 0);
+    let randomSelector = Math.random() * totalWeight;
+    let wonItem = slotsPool[0];
+
+    for (let item of slotsPool) {
+        if (randomSelector < item.weight) {
+            wonItem = item;
+            break;
+        }
+        randomSelector -= item.weight;
+    }
+
     buildSlotdleReelItems(wonItem);
     
-    // Absolute CSS Position resets
     strip.style.transition = 'none';
     strip.style.transform = 'translateY(0px)';
     
-    // Force DOM Reflow to re-trigger transition matrices
-    strip.offsetHeight;
+    strip.offsetHeight; // Force Layout reflow Matrix
     
-    // 42 cells * 70px height = 2940px total scrolling travel offset distance
-    strip.style.transition = 'transform 3.8s cubic-bezier(0.12, 0.88, 0.33, 1)';
+    strip.style.transition = 'transform 3.5s cubic-bezier(0.1, 0.85, 0.25, 1)';
     strip.style.transform = 'translateY(-2940px)';
 
-    // Play ticking simulation sequence natively
     let tickCount = 0;
     const tickerInterval = setInterval(() => {
-        if (tickCount < 30) playTypeSound();
+        if (tickCount < 32) playTypeSound();
         tickCount++;
-    }, 110);
+    }, 100);
 
     setTimeout(() => {
         clearInterval(tickerInterval);
         playWinSound();
         
-        // Inject Glow Matrix profile
-        viewport.className = `glow-${wonItem.rarity}`;
+        viewport.style.borderColor = wonItem.color;
         
-        // Update Local Registry Data Sets
         slotCurrency += wonItem.value;
         localStorage.setItem('insidle_slot_cash', slotCurrency);
         document.getElementById('slotdle-cash-counter').innerText = `$${slotCurrency}`;
         
-        // Inventory update and append tracking matrix
         slotInventory.unshift({ ...wonItem, timestamp: Date.now() });
         localStorage.setItem('insidle_slot_inv', JSON.stringify(slotInventory));
         
@@ -846,7 +861,7 @@ function runSlotdleSpinEngine() {
         
         isSlotSpinning = false;
         triggerBtn.disabled = false;
-    }, 3850);
+    }, 3550);
 }
 
 function renderSlotdleInventoryView() {
@@ -856,7 +871,8 @@ function renderSlotdleInventoryView() {
     slotInventory.forEach(item => {
         const box = document.createElement('div');
         box.className = 'inventory-card';
-        box.style.borderColor = item.color;
+        box.style.borderColor = '#3a3a3c';
+        box.style.borderLeft = `4px solid ${item.color}`;
         box.innerHTML = `
             <div class="inv-name">${item.name}</div>
             <div class="inv-rarity" style="color: ${item.color}">${item.rarity.toUpperCase()}</div>
@@ -886,6 +902,7 @@ function resetState() {
 
 function setupGrid() {
     const grid = document.getElementById('guess-grid');
+    if (!grid) return;
     grid.innerHTML = '';
     const columnsCount = (currentMode === 'wordle' || currentMode === 'infinite-wordle') ? currentAnswer.length : 1;
 
@@ -1083,6 +1100,7 @@ function updateGridDisplay() {
 
             for (let j = 0; j < currentAnswer.length; j++) {
                 const tile = document.getElementById(`row-${i}-tile-${j}`);
+                if (!tile) continue;
                 if (currentGuessStr) {
                     tile.innerText = currentGuessStr[j] || '';
                     let targetStatus = tileStatuses[j];
@@ -1098,6 +1116,7 @@ function updateGridDisplay() {
             }
         } else {
             const tile = document.getElementById(`row-${i}-tile-0`);
+            if (!tile) continue;
             if (currentGuessStr) {
                 tile.innerText = currentGuessStr;
                 let matchResult = checkCloseness(currentGuessStr, currentAnswer);
@@ -1137,10 +1156,10 @@ function endGame() {
             infBtn.innerText = "Play Infinite Wordle";
             infBtn.style.marginTop = "18px";
             infBtn.style.padding = "10px 20px";
-            infBtn.style.backgroundColor = "#2ed573";
+            infBtn.style.backgroundColor = "#6aaa64";
             infBtn.style.color = "#ffffff";
             infBtn.style.border = "none";
-            infBtn.style.borderRadius = "5px";
+            infBtn.style.borderRadius = "4px";
             infBtn.style.cursor = "pointer";
             infBtn.style.fontFamily = "'Inter', sans-serif";
             infBtn.style.fontWeight = "bold";
@@ -1200,9 +1219,12 @@ window.addEventListener('keydown', (e) => {
     handleWordleInput(e.key);
 });
 
-// --- ENGINE STYLE SHEET REGISTRY ---
+// --- STYLESHEET REGISTRY MATRIX ---
 const customStyles = document.createElement('style');
 customStyles.innerHTML = `
+    /* HIDE LEGACY STATIC SELECTORS GLOBALLY */
+    #mode-selector, .mode-buttons { display: none !important; }
+
     /* SLEEK DROP-DOWN MENU STYLES */
     #sleek-menu-wrapper {
         position: fixed;
@@ -1212,126 +1234,125 @@ customStyles.innerHTML = `
         font-family: 'Inter', sans-serif;
     }
     #sleek-menu-toggle {
-        width: 46px;
-        height: 46px;
-        background-color: #2f3542;
-        border: 2px solid #57606f;
-        border-radius: 14px;
+        width: 44px;
+        height: 44px;
+        background-color: #121213;
+        border: 2px solid #3a3a3c;
+        border-radius: 8px;
         color: #ffffff;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.2s ease;
     }
     #sleek-menu-toggle:hover {
-        background-color: #57606f;
-        transform: scale(1.05);
+        background-color: #272729;
     }
     #sleek-menu-dropdown {
         position: absolute;
-        top: 56px;
+        top: 52px;
         right: 0;
-        background-color: #1e222b;
-        border: 1px solid #2f3542;
-        border-radius: 14px;
-        width: 210px;
+        background-color: #121213;
+        border: 2px solid #3a3a3c;
+        border-radius: 8px;
+        width: 200px;
         overflow: hidden;
         display: none;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         transform-origin: top right;
     }
     #sleek-menu-dropdown.open {
         display: block;
-        animation: menuGrownIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: menuGrownIn 0.15s ease-out forwards;
     }
     @keyframes menuGrownIn {
-        from { opacity: 0; transform: scale(0.92); }
+        from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
     }
     .menu-item {
         padding: 12px 16px;
-        color: #a4b0be;
-        font-size: 0.95rem;
+        color: #d7dede;
+        font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.15s ease;
-        border-bottom: 1px solid #252a34;
+        border-bottom: 1px solid #272729;
     }
     .menu-item:last-child { border-bottom: none; }
     .menu-item:hover {
-        background-color: #2f3542;
-        color: #ffffff;
-        padding-left: 20px;
+        background-color: #272729;
     }
     .menu-item.active {
-        background-color: #2ed573;
-        color: #ffffff;
+        background-color: #6aaa64 !important;
+        color: #ffffff !important;
     }
 
-    /* SLOTDLE ARCHITECTURE GRAPHICS STYLE SHEETS */
+    /* WORDLE METRIC MINIMALIST SLOT MACHINE */
     #slotdle-view-container {
         width: 100%;
-        max-width: 500px;
+        max-width: 480px;
         margin: 0 auto;
         font-family: 'Inter', sans-serif;
     }
     #slotdle-header-block {
         text-align: center;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
     }
     #slotdle-title-label {
-        font-size: 2.2rem;
-        font-weight: 900;
-        letter-spacing: 5px;
-        color: #ffa502;
-        text-shadow: 0 0 15px rgba(255, 165, 2, 0.4);
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        color: #ffffff;
     }
     #slotdle-cash-counter {
-        font-size: 1.6rem;
-        font-weight: 800;
-        color: #2ed573;
-        margin-top: 5px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #6aaa64;
+        margin-top: 4px;
+    }
+    #slotdle-odds-index {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #818384;
+        margin-top: 8px;
+        letter-spacing: 0.5px;
+        line-height: 1.4;
     }
     #slotdle-machine-wrapper {
-        background: #1e222b;
-        border: 4px solid #2f3542;
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: inset 0 4px 20px rgba(0,0,0,0.6);
+        background: #121213;
+        border: 2px solid #3a3a3c;
+        border-radius: 4px;
+        padding: 20px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 20px;
+        gap: 16px;
     }
     #slotdle-viewport {
         position: relative;
         width: 100%;
-        height: 70px;
-        background: #0f1115;
-        border-radius: 12px;
+        height: 62px;
+        background: #121213;
         overflow: hidden;
-        border: 2px solid #252a34;
-        transition: all 0.4s ease;
+        border: 2px solid #3a3a3c;
+        box-sizing: border-box;
+        transition: border-color 0.3s ease;
     }
     #slotdle-horizontal-bar {
         position: absolute;
         top: 0; left: 0;
         width: 100%; height: 100%;
-        border-top: 33px solid rgba(0,0,0,0);
-        border-bottom: 33px solid rgba(0,0,0,0);
-        box-sizing: border-box;
         pointer-events: none;
         z-index: 10;
+        display: flex;
+        align-items: center;
     }
     #slotdle-horizontal-bar::after {
         content: '';
         display: block;
         width: 100%;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.25);
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        height: 2px;
+        background: rgba(255, 255, 255, 0.15);
     }
     #slotdle-reel-strip {
         display: flex;
@@ -1339,95 +1360,86 @@ customStyles.innerHTML = `
         transform: translateY(0px);
     }
     .slot-reel-cell {
-        height: 70px;
+        height: 58px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
-        font-weight: 800;
-        letter-spacing: 1px;
-        background: #0f1115;
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: #121213;
         box-sizing: border-box;
         text-transform: uppercase;
     }
     #slotdle-spin-trigger {
         width: 100%;
-        padding: 15px;
-        background: #ff4757;
+        padding: 14px;
+        background: #818384;
         border: none;
-        border-radius: 12px;
+        border-radius: 4px;
         color: #ffffff;
-        font-size: 1.2rem;
-        font-weight: 900;
-        letter-spacing: 2px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 1px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        transition: background-color 0.15s ease;
     }
     #slotdle-spin-trigger:hover:not(:disabled) {
-        background: #ff6b81;
-        transform: translateY(-2px);
+        background: #6aaa64;
     }
     #slotdle-spin-trigger:disabled {
-        background: #57606f;
-        box-shadow: none;
+        background: #272729;
+        color: #565758;
         cursor: not-allowed;
     }
     
-    /* RARITY NEON ILLUMINATION GLOW MATRICES */
-    .glow-common { border-color: #a4b0be !important; box-shadow: 0 0 20px rgba(164, 176, 190, 0.6); }
-    .glow-uncommon { border-color: #2ed573 !important; box-shadow: 0 0 20px rgba(46, 213, 115, 0.6); }
-    .glow-rare { border-color: #1e90ff !important; box-shadow: 0 0 20px rgba(30, 144, 255, 0.6); }
-    .glow-epic { border-color: #9b59b6 !important; box-shadow: 0 0 20px rgba(155, 89, 182, 0.6); }
-    .glow-legendary { border-color: #ffa502 !important; box-shadow: 0 0 20px rgba(255, 165, 2, 0.6); }
-
-    /* INVENTORY SYSTEM TILES SHEETS WITH REFLOW LAYOUTS */
+    /* INVENTORY REFLOW SYSTEM GRID layout */
     #slotdle-inventory-title {
-        margin-top: 35px;
-        font-size: 1.1rem;
-        font-weight: 800;
-        letter-spacing: 2px;
-        color: #747d8c;
-        border-bottom: 2px solid #2f3542;
-        padding-bottom: 8px;
-        margin-bottom: 15px;
+        margin-top: 30px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: #818384;
+        border-bottom: 2px solid #3a3a3c;
+        padding-bottom: 6px;
+        margin-bottom: 12px;
     }
     #slotdle-inventory-grid {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 10px;
         width: 100%;
         padding-bottom: 40px;
     }
     .inventory-card {
-        flex: 0 0 calc(33.33% - 8px);
-        background: #1e222b;
-        border: 2px solid #2f3542;
-        border-radius: 12px;
-        padding: 12px;
+        flex: 0 0 calc(33.33% - 7px);
+        background: #121213;
+        border: 2px solid #3a3a3c;
+        border-radius: 4px;
+        padding: 10px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        gap: 6px;
-        animation: invCardSpawn 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        gap: 4px;
+        animation: invCardSpawn 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
     @keyframes invCardSpawn {
-        from { opacity: 0; transform: scale(0.6) translateX(-20px); }
-        to { opacity: 1; transform: scale(1) translateX(0); }
+        from { opacity: 0; transform: scale(0.85) translateY(5px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
     }
-    .inv-name { font-size: 0.85rem; font-weight: 800; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-    .inv-rarity { font-size: 0.7rem; font-weight: 900; letter-spacing: 1px; }
-    .inv-value { font-size: 0.85rem; font-weight: 700; color: #2ed573; }
+    .inv-name { font-size: 0.8rem; font-weight: 700; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+    .inv-rarity { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; }
+    .inv-value { font-size: 0.8rem; font-weight: 700; color: #6aaa64; }
 
-    /* FORMER LEGACY ASSETS */
+    /* INTEGRATED CLEAN WORDLE CORE FIXES */
     .wordle-mode-header {
         font-family: 'Inter', sans-serif !important;
         font-style: normal !important;
-        font-size: 1.7rem !important;
-        font-weight: 800 !important;
+        font-size: 1.6rem !important;
+        font-weight: 700 !important;
         text-transform: uppercase;
-        letter-spacing: 3px;
+        letter-spacing: 2px;
         text-align: center;
         background: none !important;
         border: none !important;
@@ -1442,8 +1454,8 @@ customStyles.innerHTML = `
         justify-content: center; align-items: center; z-index: 99999;
         animation: celebrationAnim 2s ease-in-out forwards; 
     }
-    .celebration-text { color: #ffffff; font-family: 'Inter', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
-    .celebration-text span { color: #2ed573; }
+    .celebration-text { color: #ffffff; font-family: 'Inter', sans-serif; font-size: 2.5rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+    .celebration-text span { color: #6aaa64; }
     .tile.correct.mason-mode, .key.correct.mason-mode { background-color: #ff9f43 !important; border-color: #ff9f43 !important; color: #ffffff !important; }
     .gurshaan-egg-c { color: #00a8ff !important; display: inline-block; font-size: 3.5rem; font-weight: 900; transform-origin: bottom center; animation: gurshaanFluidBounce 2.0s cubic-bezier(0.28, 0.84, 0.42, 1) forwards; }
     @keyframes gurshaanFluidBounce { 0% { transform: scale(1, 1) translateY(0); } 10% { transform: scale(1.2, 0.8) translateY(0); } 25% { transform: scale(0.9, 1.15) translateY(-50px); } 40% { transform: scale(1.05, 0.9) translateY(0); } 55% { transform: scale(0.97, 1.02) translateY(-15px); } 70% { transform: scale(1.02, 0.98) translateY(0); } 85% { transform: scale(1, 1) translateY(-3px); } 100% { transform: scale(1, 1) translateY(0); } }
