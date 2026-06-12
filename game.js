@@ -406,7 +406,6 @@ function applyBogovirusInfection() {
                 node.nodeValue = "bogovirus";
             }
         } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
-            // Guard conditions preventing core disinfection widgets from being transformed
             if (node.id === 'bogo-reset-btn' || node.id === 'bogo-why-overlay' || node.classList.contains('neon-flicker-text')) {
                 return;
             }
@@ -437,6 +436,23 @@ function triggerBogoResetSequence() {
     
     overlay.appendChild(textNode);
     document.body.appendChild(overlay);
+    
+    // --- INTEGRATED AUDIO INJECTION ---
+    const whyAudio = new Audio('whysound.mp3');
+    whyAudio.play().catch(e => console.log("Audio contextual lock:", e));
+    
+    // Start fading 800ms before execution timeout (3200ms into the 4000ms layout)
+    setTimeout(() => {
+        let fadeInterval = setInterval(() => {
+            if (whyAudio.volume > 0.05) {
+                whyAudio.volume = Math.max(0, whyAudio.volume - 0.05);
+            } else {
+                whyAudio.volume = 0;
+                clearInterval(fadeInterval);
+                whyAudio.pause(); // Cut track early
+            }
+        }, 50);
+    }, 3200);
     
     setTimeout(() => {
         window.location.reload();
@@ -633,7 +649,6 @@ function handleGameWinEasterEggs() {
         playWinSound();
     }
 
-    // 1. Fluid Gurshaan "C" Animation Update
     if (answerClean === 'GURSHAAN') {
         const titleElement = document.querySelector('h1') || document.querySelector('.header h1') || document.getElementById('logo');
         if (titleElement) {
@@ -643,7 +658,6 @@ function handleGameWinEasterEggs() {
         }
     }
 
-    // 2. Damien "Umazing!"
     if (answerClean === 'DAMIEN') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay damien-egg-overlay';
@@ -663,7 +677,6 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3200);
     }
 
-    // 3. Callum Dynamic Gif Renderer
     if (answerClean === 'CALLUM') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay callum-egg-overlay';
@@ -675,7 +688,6 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 2000);
     }
 
-    // 4. Mrs. Knibbs "⚠️ LARP ALERT ⚠️" Glowing Wave
     if (answerClean === 'MRS. KNIBBS') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay knibbs-egg-overlay';
@@ -695,7 +707,6 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3200);
     }
 
-    // 5. Riley Staggered Alternate "67" Rainbow System
     if (answerClean === 'RILEY') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay riley-egg-overlay';
@@ -715,7 +726,6 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3000);
     }
 
-    // 6. Bogo Row-Drag & Kinetic Snap Fling
     if (answerClean === 'BOGO') {
         const targetRowIndex = gameState.guesses.length - 1;
         const winRow = document.getElementById(`row-${targetRowIndex}`);
@@ -734,7 +744,6 @@ function handleGameWinEasterEggs() {
         }
     }
 
-    // 7. Markiplier Top-Left GIF Spawner
     if (answerClean === 'MARKIPLIER') {
         const markImg = document.createElement('img');
         markImg.src = 'images/markiplier.gif';
@@ -745,7 +754,6 @@ function handleGameWinEasterEggs() {
         }, 3000);
     }
 
-    // 8. 3FS Bottom-Left GIF Spawner
     if (answerClean === '3FS') {
         const tfsImg = document.createElement('img');
         tfsImg.src = 'images/3fs.gif';
@@ -756,7 +764,6 @@ function handleGameWinEasterEggs() {
         }, 3000);
     }
 
-    // 9. Rigid Bogo Quote Physics Spawner Integration
     if (currentClueData && (currentClueData.id === 24 || currentClueData.id === 25)) {
         spawnPhysicsBogo();
     }
