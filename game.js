@@ -24,13 +24,6 @@ const quotesPool = [
     { id: 23, quote: "Even using scientific notation wouldn't do it justice because the exponent itself would be a number that requires its own scientific notation.", author: "BoltBot" },
     { id: 24, quote: "bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo bogo", author: "bogo" },
     { id: 25, quote: "bogovirus bogovirus bogovirus bogovirus bogovirus bogovirus ", author: "bogo" },
-    { id: 26, quote: "I am the one who knocks.", author: "Walter White" },
-    { id: 27, quote: "I'm... HOME!!!", author: "Damien" },
-    { id: 28, quote: "buh", author: "Callum" },
-    { id: 29, quote: "Yeah I play trackmania, how could you tell?", author: "Callum" },
-    { id: 30, quote: "Faggot.", author: "Callum" },
-    { id: 31, quote: "Shut the frick up", author: "3FS" },
-    { id: 32, quote: "I LOVE YOU SSANO!!!!!!!!!!", author: "Callum" }
 ];
 
 const wordlePool = [
@@ -117,6 +110,160 @@ let gameState = {
     gameOver: false,
     won: false
 };
+
+// --- KINETIC PHYSICS ENGINE MATRIX ---
+let bogoPhysicsObjects = [];
+let physicsLoopActive = false;
+
+function spawnPhysicsBogo() {
+    const img = document.createElement('img');
+    img.src = 'images/bogo.png';
+    img.className = 'bogo-physics-sprite';
+    img.style.position = 'fixed';
+    img.style.width = '85px';
+    img.style.height = '85px';
+    img.style.cursor = 'grab';
+    img.style.zIndex = '100001';
+    
+    const startX = window.innerWidth / 2 - 42;
+    const startY = 80;
+    img.style.left = `${startX}px`;
+    img.style.top = `${startY}px`;
+    
+    document.body.appendChild(img);
+    
+    const bogoObj = {
+        element: img,
+        x: startX,
+        y: startY,
+        vx: (Math.random() - 0.5) * 14,
+        vy: 2,
+        width: 85,
+        height: 85,
+        isDragging: false,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        lastX: startX,
+        lastY: startY
+    };
+    
+    img.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        bogoObj.isDragging = true;
+        img.style.cursor = 'grabbing';
+        bogoObj.dragOffsetX = e.clientX - bogoObj.x;
+        bogoObj.dragOffsetY = e.clientY - bogoObj.y;
+        bogoObj.vx = 0;
+        bogoObj.vy = 0;
+    });
+
+    img.addEventListener('touchstart', (e) => {
+        bogoObj.isDragging = true;
+        const touch = e.touches[0];
+        bogoObj.dragOffsetX = touch.clientX - bogoObj.x;
+        bogoObj.dragOffsetY = touch.clientY - bogoObj.y;
+        bogoObj.vx = 0;
+        bogoObj.vy = 0;
+    }, { passive: true });
+    
+    bogoPhysicsObjects.push(bogoObj);
+    
+    if (!physicsLoopActive) {
+        physicsLoopActive = true;
+        requestAnimationFrame(physicsLoop);
+    }
+}
+
+window.addEventListener('mousemove', (e) => {
+    bogoPhysicsObjects.forEach(bogo => {
+        if (bogo.isDragging) {
+            bogo.x = e.clientX - bogo.dragOffsetX;
+            bogo.y = e.clientY - bogo.dragOffsetY;
+            bogo.vx = bogo.x - bogo.lastX;
+            bogo.vy = bogo.y - bogo.lastY;
+        }
+    });
+});
+
+window.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    bogoPhysicsObjects.forEach(bogo => {
+        if (bogo.isDragging) {
+            bogo.x = touch.clientX - bogo.dragOffsetX;
+            bogo.y = touch.clientY - bogo.dragOffsetY;
+            bogo.vx = bogo.x - bogo.lastX;
+            bogo.vy = bogo.y - bogo.lastY;
+        }
+    });
+}, { passive: true });
+
+window.addEventListener('mouseup', () => {
+    bogoPhysicsObjects.forEach(bogo => {
+        if (bogo.isDragging) {
+            bogo.isDragging = false;
+            bogo.element.style.cursor = 'grab';
+        }
+    });
+});
+
+window.addEventListener('touchend', () => {
+    bogoPhysicsObjects.forEach(bogo => {
+        if (bogo.isDragging) {
+            bogo.isDragging = false;
+        }
+    });
+});
+
+function physicsLoop() {
+    const gravity = 0.6;
+    const bounce = -0.72; 
+    const friction = 0.99; 
+    
+    bogoPhysicsObjects.forEach(bogo => {
+        const maxX = window.innerWidth - bogo.width;
+        const maxY = window.innerHeight - bogo.height;
+        
+        if (bogo.isDragging) {
+            bogo.lastX = bogo.x;
+            bogo.lastY = bogo.y;
+            bogo.element.style.left = `${bogo.x}px`;
+            bogo.element.style.top = `${bogo.y}px`;
+        } else {
+            bogo.vy += gravity;
+            bogo.x += bogo.vx;
+            bogo.y += bogo.vy;
+            
+            bogo.vx *= friction;
+            bogo.vy *= friction;
+            
+            if (bogo.y >= maxY) {
+                bogo.y = maxY;
+                bogo.vy *= bounce;
+                bogo.vx *= 0.88; 
+            }
+            if (bogo.y <= 0) {
+                bogo.y = 0;
+                bogo.vy *= bounce;
+            }
+            if (bogo.x >= maxX) {
+                bogo.x = maxX;
+                bogo.vx *= bounce;
+            }
+            if (bogo.x <= 0) {
+                bogo.x = 0;
+                bogo.vx *= bounce;
+            }
+            
+            bogo.element.style.left = `${bogo.x}px`;
+            bogo.element.style.top = `${bogo.y}px`;
+            
+            bogo.lastX = bogo.x;
+            bogo.lastY = bogo.y;
+        }
+    });
+    
+    requestAnimationFrame(physicsLoop);
+}
 
 // --- SYNTHETIC AUDIO CONFIGURATION ENGINE ---
 let audioCtx = null;
@@ -331,7 +478,7 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3200);
     }
 
-    // 3. Callum Dynamic Gif Renderer (Fixed assets path)
+    // 3. Callum Dynamic Gif Renderer
     if (answerClean === 'CALLUM') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay callum-egg-overlay';
@@ -402,7 +549,7 @@ function handleGameWinEasterEggs() {
         }
     }
 
-    // 7. Markiplier Top-Left GIF Spawner (3 Seconds Display)
+    // 7. Markiplier Top-Left GIF Spawner
     if (answerClean === 'MARKIPLIER') {
         const markImg = document.createElement('img');
         markImg.src = 'images/markiplier.gif';
@@ -413,7 +560,7 @@ function handleGameWinEasterEggs() {
         }, 3000);
     }
 
-    // 8. 3FS Bottom-Left GIF Spawner (3 Seconds Display)
+    // 8. 3FS Bottom-Left GIF Spawner
     if (answerClean === '3FS') {
         const tfsImg = document.createElement('img');
         tfsImg.src = 'images/3fs.gif';
@@ -422,6 +569,11 @@ function handleGameWinEasterEggs() {
         setTimeout(() => {
             tfsImg.remove();
         }, 3000);
+    }
+
+    // 9. Rigid Bogo Quote Physics Spawner Integration
+    if (currentClueData && (currentClueData.id === 24 || currentClueData.id === 25)) {
+        spawnPhysicsBogo();
     }
 }
 
@@ -1072,6 +1224,13 @@ customStyles.innerHTML = `
         69% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(-1); }
         82% { right: -200px; transform: translateY(-50%) scaleX(-1); }
         100% { right: -200px; }
+    }
+
+    /* INTERACTIVE RIGID BOGO PHYSICS TOKENS */
+    .bogo-physics-sprite {
+        user-select: none;
+        -webkit-user-drag: none;
+        touch-action: none;
     }
 
     /* MARKIPLIER EASTER EGG LAYOUT */
