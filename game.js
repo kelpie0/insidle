@@ -327,7 +327,11 @@ function physicsLoop() {
 
 // --- BOGOVIRUS INFECTION SUB-SYSTEM ---
 function applyBogovirusInfection() {
-    if (localStorage.getItem('bogovirus_infected') !== 'true') return;
+    if (localStorage.getItem('bogovirus_infected') !== 'true') {
+        const existingBtn = document.getElementById('bogo-reset-btn');
+        if (existingBtn) existingBtn.remove();
+        return;
+    }
 
     if (!document.getElementById('bogovirus-core-override')) {
         const styleOverride = document.createElement('style');
@@ -336,8 +340,64 @@ function applyBogovirusInfection() {
             :root { --correct-color: #00a8ff !important; }
             .celebration-text span { color: #00a8ff !important; }
             .tile.correct, .key.correct { background-color: #00a8ff !important; border-color: #00a8ff !important; }
+            
+            /* RESET TOGGLE SWITCH */
+            #bogo-reset-btn {
+                position: fixed;
+                bottom: 20px; right: 20px;
+                background-color: #000000;
+                border: 2px solid #ffffff;
+                color: #ffffff;
+                padding: 12px 24px;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 1rem; font-weight: bold;
+                cursor: pointer; z-index: 100005;
+                border-radius: 4px;
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.4), inset 0 0 5px rgba(255, 255, 255, 0.2);
+                text-shadow: 0 0 8px #ffffff;
+                transition: all 0.2s ease-in-out;
+            }
+            #bogo-reset-btn:hover {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.4);
+                transform: scale(1.02);
+            }
+            
+            /* INTERCEPT WIRE SYSTEM OVERLAY */
+            #bogo-why-overlay {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100vw; height: 100vh;
+                background-color: #000000;
+                display: flex; justify-content: center; align-items: center;
+                z-index: 100015;
+            }
+            .neon-flicker-text {
+                color: #ffffff;
+                font-family: 'Inter', sans-serif;
+                font-size: 5rem; font-weight: 700;
+                letter-spacing: 2px;
+                animation: bogoNeonFlicker 1.8s infinite alternate;
+            }
+            @keyframes bogoNeonFlicker {
+                0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                    text-shadow: 0 0 4px #fff, 0 0 10px #fff, 0 0 20px #fff, 0 0 40px #fff;
+                    opacity: 1;
+                }
+                20%, 24%, 55% {
+                    text-shadow: none;
+                    opacity: 0.25;
+                }
+            }
         `;
         document.head.appendChild(styleOverride);
+    }
+
+    if (!document.getElementById('bogo-reset-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'bogo-reset-btn';
+        btn.innerText = "$sudo remove bogovirus";
+        btn.onclick = triggerBogoResetSequence;
+        document.body.appendChild(btn);
     }
 
     function transformDOMText(node) {
@@ -346,6 +406,10 @@ function applyBogovirusInfection() {
                 node.nodeValue = "bogovirus";
             }
         } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+            // Guard conditions preventing core disinfection widgets from being transformed
+            if (node.id === 'bogo-reset-btn' || node.id === 'bogo-why-overlay' || node.classList.contains('neon-flicker-text')) {
+                return;
+            }
             if (node.tagName === 'INPUT') {
                 node.placeholder = "bogovirus";
                 if (node.value) node.value = "bogovirus";
@@ -356,6 +420,27 @@ function applyBogovirusInfection() {
         }
     }
     transformDOMText(document.body);
+}
+
+function triggerBogoResetSequence() {
+    localStorage.removeItem('bogovirus_infected');
+    
+    const btn = document.getElementById('bogo-reset-btn');
+    if (btn) btn.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'bogo-why-overlay';
+    
+    const textNode = document.createElement('div');
+    textNode.className = 'neon-flicker-text';
+    textNode.innerText = "Why..?";
+    
+    overlay.appendChild(textNode);
+    document.body.appendChild(overlay);
+    
+    setTimeout(() => {
+        window.location.reload();
+    }, 4000);
 }
 
 // --- SYNTHETIC AUDIO CONFIGURATION ENGINE ---
