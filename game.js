@@ -219,6 +219,72 @@ function physicsLoop() {
     const bounce = -0.72; 
     const friction = 0.99; 
     
+    // --- BOGO COLLISION DETECTION & RESOLUTION ---
+    for (let i = 0; i < bogoPhysicsObjects.length; i++) {
+        for (let j = i + 1; j < bogoPhysicsObjects.length; j++) {
+            let b1 = bogoPhysicsObjects[i];
+            let b2 = bogoPhysicsObjects[j];
+
+            // Treat bogos as circles for smoother bouncing
+            let r1 = b1.width / 2;
+            let r2 = b2.width / 2;
+
+            let c1x = b1.x + r1;
+            let c1y = b1.y + b1.height / 2;
+            let c2x = b2.x + r2;
+            let c2y = b2.y + b2.height / 2;
+
+            let dx = c2x - c1x;
+            let dy = c2y - c1y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            let minDist = r1 + r2;
+
+            if (distance < minDist && distance > 0) {
+                // Collision Normal
+                let nx = dx / distance;
+                let ny = dy / distance;
+
+                // Resolve positional overlap
+                let overlap = minDist - distance;
+                if (!b1.isDragging) {
+                    b1.x -= nx * (overlap / 2);
+                    b1.y -= ny * (overlap / 2);
+                }
+                if (!b2.isDragging) {
+                    b2.x += nx * (overlap / 2);
+                    b2.y += ny * (overlap / 2);
+                }
+
+                // Calculate relative velocity
+                let dvx = b2.vx - b1.vx;
+                let dvy = b2.vy - b1.vy;
+
+                // Velocity along the normal
+                let velAlongNormal = dvx * nx + dvy * ny;
+
+                // Do not resolve if velocities are separating
+                if (velAlongNormal < 0) {
+                    let restitution = 0.75; // Bounciness between objects
+                    let impulse = -(1 + restitution) * velAlongNormal;
+                    impulse /= 2; // Assuming equal mass
+
+                    let impulseX = impulse * nx;
+                    let impulseY = impulse * ny;
+
+                    if (!b1.isDragging) {
+                        b1.vx -= impulseX;
+                        b1.vy -= impulseY;
+                    }
+                    if (!b2.isDragging) {
+                        b2.vx += impulseX;
+                        b2.vy += impulseY;
+                    }
+                }
+            }
+        }
+    }
+    // ---------------------------------------------
+
     bogoPhysicsObjects.forEach(bogo => {
         const maxX = window.innerWidth - bogo.width;
         const maxY = window.innerHeight - bogo.height;
