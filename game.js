@@ -95,15 +95,6 @@ const screenshotPool = [
     { id: 9, image: "images/crack.png", author: "Callum" },
 ];
 
-// --- SLOTDLE PRIZE PROBABILITY MATRIX ENGINE ---
-const slotsPool = [
-    { name: "Riley", rarity: "common", color: "#818384", value: 15, weight: 50 },
-    { name: "Mason", rarity: "uncommon", color: "#6aaa64", value: 40, weight: 30 },
-    { name: "Gurshaan", rarity: "rare", color: "#45aaf2", value: 120, weight: 14 },
-    { name: "Callum", rarity: "epic", color: "#a55eea", value: 350, weight: 5 },
-    { name: "Damien", rarity: "legendary", color: "#c9b458", value: 1000, weight: 1 }
-];
-
 const MAX_GUESSES = 6;
 let currentMode = 'daily-quote'; 
 let currentAnswer = ""; 
@@ -113,11 +104,6 @@ let playedQuotes = [];
 let playedScreenshots = [];
 let playedWordles = [];
 let recentScreenshots = [];
-
-// Slotdle State Persistence
-let slotCurrency = parseInt(localStorage.getItem('insidle_slot_cash') || '0', 10);
-let slotInventory = JSON.parse(localStorage.getItem('insidle_slot_inv') || '[]');
-let isSlotSpinning = false;
 
 let gameState = {
     guesses: [],
@@ -293,10 +279,13 @@ function playTypeSound() {
     if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
+    
     osc.type = 'sine';
     osc.frequency.setValueAtTime(550 + Math.random() * 150, audioCtx.currentTime);
+    
     gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.04);
+    
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -308,10 +297,13 @@ function playClickSound() {
     if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
+    
     osc.type = 'sine';
     osc.frequency.setValueAtTime(850, audioCtx.currentTime);
+    
     gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
+    
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -323,11 +315,14 @@ function playFailSound() {
     if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
+    
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(170, audioCtx.currentTime);
     osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.2);
+    
     gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+    
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -339,13 +334,17 @@ function playWinSound() {
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
     const notes = [293.66, 349.23, 440.00, 587.33];
+    
     notes.forEach((freq, index) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
+        
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now + index * 0.07);
+        
         gain.gain.setValueAtTime(0.12, now + index * 0.07);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.07 + 0.35);
+        
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start(now + index * 0.07);
@@ -359,14 +358,17 @@ function playMeowSound() {
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
+    
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(380, now);
     osc.frequency.exponentialRampToValueAtTime(820, now + 0.12);
     osc.frequency.linearRampToValueAtTime(680, now + 0.42);
+    
     gain.gain.setValueAtTime(0.001, now);
     gain.gain.linearRampToValueAtTime(0.15, now + 0.08);
     gain.gain.linearRampToValueAtTime(0.10, now + 0.28);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start(now);
@@ -413,7 +415,7 @@ function handleExhaustion() {
     document.getElementById('guess-form').style.display = 'none';
     document.getElementById('keyboard').style.display = 'none';
     document.getElementById('next-btn').style.display = 'none';
-    document.getElementById('guess-grid-container').style.display = 'none';
+    document.getElementById('guess-grid').innerHTML = '';
     document.getElementById('result-modal').style.display = 'none';
 }
 
@@ -423,20 +425,30 @@ function triggerDailyCelebration(modeName, attempts) {
     
     const overlay = document.createElement('div');
     overlay.className = 'celebration-overlay';
+
     const textContainer = document.createElement('div');
     textContainer.className = 'celebration-text';
     textContainer.innerHTML = `${modeName} IN <span>${attempts}</span>!`;
+    
     overlay.appendChild(textContainer);
     document.body.appendChild(overlay);
-    setTimeout(() => { overlay.remove(); }, 2000);
+
+    setTimeout(() => {
+        overlay.remove();
+    }, 2000);
 }
 
 // --- EXTENDED EASTER EGG MATRIX ---
 function handleGameWinEasterEggs() {
     const answerClean = currentAnswer.toUpperCase();
-    if (answerClean === 'CALLUM') playMeowSound();
-    else playWinSound();
+    
+    if (answerClean === 'CALLUM') {
+        playMeowSound();
+    } else {
+        playWinSound();
+    }
 
+    // 1. Fluid Gurshaan "C" Animation Update
     if (answerClean === 'GURSHAAN') {
         const titleElement = document.querySelector('h1') || document.querySelector('.header h1') || document.getElementById('logo');
         if (titleElement) {
@@ -446,11 +458,13 @@ function handleGameWinEasterEggs() {
         }
     }
 
+    // 2. Damien "Umazing!"
     if (answerClean === 'DAMIEN') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay damien-egg-overlay';
         const textContainer = document.createElement('div');
         textContainer.className = 'damien-egg-text';
+        
         const phrase = "UMAZING!";
         for (let i = 0; i < phrase.length; i++) {
             const letterSpan = document.createElement('span');
@@ -464,6 +478,7 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3200);
     }
 
+    // 3. Callum Dynamic Gif Renderer
     if (answerClean === 'CALLUM') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay callum-egg-overlay';
@@ -475,11 +490,13 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 2000);
     }
 
+    // 4. Mrs. Knibbs "⚠️ LARP ALERT ⚠️" Glowing Wave
     if (answerClean === 'MRS. KNIBBS') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay knibbs-egg-overlay';
         const textContainer = document.createElement('div');
         textContainer.className = 'knibbs-egg-text';
+        
         const phrase = "⚠️ LARP ALERT ⚠️";
         for (let i = 0; i < phrase.length; i++) {
             const letterSpan = document.createElement('span');
@@ -493,11 +510,13 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3200);
     }
 
+    // 5. Riley Staggered Alternate "67" Rainbow System
     if (answerClean === 'RILEY') {
         const overlay = document.createElement('div');
         overlay.className = 'celebration-overlay riley-egg-overlay';
         const textContainer = document.createElement('div');
         textContainer.className = 'riley-egg-text';
+        
         const digits = ['6', '7'];
         digits.forEach((digit, i) => {
             const digitSpan = document.createElement('span');
@@ -511,6 +530,7 @@ function handleGameWinEasterEggs() {
         setTimeout(() => { overlay.remove(); }, 3000);
     }
 
+    // 6. Bogo Row-Drag & Kinetic Snap Fling
     if (answerClean === 'BOGO') {
         const targetRowIndex = gameState.guesses.length - 1;
         const winRow = document.getElementById(`row-${targetRowIndex}`);
@@ -519,7 +539,9 @@ function handleGameWinEasterEggs() {
             bogoSprite.src = 'images/bogo.png';
             bogoSprite.className = 'bogo-egg-sprite';
             document.body.appendChild(bogoSprite);
+            
             winRow.classList.add('bogo-row-dragged');
+            
             setTimeout(() => {
                 winRow.classList.remove('bogo-row-dragged');
                 bogoSprite.remove();
@@ -527,159 +549,41 @@ function handleGameWinEasterEggs() {
         }
     }
 
+    // 7. Markiplier Top-Left GIF Spawner
     if (answerClean === 'MARKIPLIER') {
         const markImg = document.createElement('img');
         markImg.src = 'images/markiplier.gif';
         markImg.className = 'markiplier-egg-gif';
         document.body.appendChild(markImg);
-        setTimeout(() => { markImg.remove(); }, 3000);
+        setTimeout(() => { 
+            markImg.remove(); 
+        }, 3000);
     }
 
+    // 8. 3FS Bottom-Left GIF Spawner
     if (answerClean === '3FS') {
         const tfsImg = document.createElement('img');
         tfsImg.src = 'images/3fs.gif';
         tfsImg.className = 'tfs-egg-gif';
         document.body.appendChild(tfsImg);
-        setTimeout(() => { tfsImg.remove(); }, 3000);
+        setTimeout(() => {
+            tfsImg.remove();
+        }, 3000);
     }
 
+    // 9. Rigid Bogo Quote Physics Spawner Integration
     if (currentClueData && (currentClueData.id === 24 || currentClueData.id === 25)) {
         spawnPhysicsBogo();
     }
 }
 
-// --- CORE UI SETUP ENGINE ---
-function setupTopRightMenu() {
-    if (document.getElementById('sleek-menu-wrapper')) return;
-
-    // Hard wipe old static selector buttons to prevent duplication bugs
-    const legacySelector = document.getElementById('mode-selector') || document.querySelector('.mode-buttons');
-    if (legacySelector) legacySelector.remove();
-
-    const menuWrapper = document.createElement('div');
-    menuWrapper.id = 'sleek-menu-wrapper';
-
-    const menuBtn = document.createElement('button');
-    menuBtn.id = 'sleek-menu-toggle';
-    menuBtn.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-    `;
-
-    const menuDropdown = document.createElement('div');
-    menuDropdown.id = 'sleek-menu-dropdown';
-
-    const configurations = [
-        { id: 'daily-quote', label: 'Daily Quote' },
-        { id: 'infinite-quote', label: 'Infinite Quote' },
-        { id: 'wordle', label: 'Wordle' },
-        { id: 'infinite-wordle', label: 'Infinite Wordle' },
-        { id: 'screenshot', label: 'Screenshot' },
-        { id: 'slotdle', label: 'Slotdle' }
-    ];
-
-    configurations.forEach(config => {
-        const opt = document.createElement('div');
-        opt.className = 'menu-item';
-        if (config.id === currentMode) opt.classList.add('active');
-        opt.innerText = config.label;
-        opt.addEventListener('click', () => {
-            setMode(config.id);
-            menuDropdown.classList.remove('open');
-        });
-        menuDropdown.appendChild(opt);
-    });
-
-    menuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        menuDropdown.classList.toggle('open');
-    });
-
-    document.addEventListener('click', () => {
-        menuDropdown.classList.remove('open');
-    });
-
-    menuWrapper.appendChild(menuBtn);
-    menuWrapper.appendChild(menuDropdown);
-    document.body.appendChild(menuWrapper);
-}
-
-function setupSlotdleDOM() {
-    if (document.getElementById('slotdle-view-container')) return;
-
-    const slotContainer = document.createElement('div');
-    slotContainer.id = 'slotdle-view-container';
-    slotContainer.style.display = 'none';
-
-    // Calculate dynamically updating percentages index data directly out of pools constants
-    const totalW = slotsPool.reduce((acc, item) => acc + item.weight, 0);
-    const legendIndexString = slotsPool.map(item => {
-        const pct = ((item.weight / totalW) * 100).toFixed(0);
-        return `<span style="color: ${item.color}">${item.rarity.toUpperCase()} (${pct}%)</span>`;
-    }).join(' • ');
-
-    slotContainer.innerHTML = `
-        <div id="slotdle-header-block">
-            <div id="slotdle-title-label">SLOTDLE</div>
-            <div id="slotdle-cash-counter">$0</div>
-            <div id="slotdle-odds-index">${legendIndexString}</div>
-        </div>
-        
-        <div id="slotdle-machine-wrapper">
-            <div id="slotdle-viewport">
-                <div id="slotdle-horizontal-bar"></div>
-                <div id="slotdle-reel-strip"></div>
-            </div>
-            <button id="slotdle-spin-trigger">SPIN</button>
-        </div>
-
-        <div id="slotdle-inventory-title">INVENTORY</div>
-        <div id="slotdle-inventory-grid"></div>
-    `;
-
-    const targetContainer = document.getElementById('guess-grid-container') || document.getElementById('guess-grid');
-    if (targetContainer && targetContainer.parentNode) {
-        targetContainer.parentNode.insertBefore(slotContainer, targetContainer);
-    } else {
-        document.body.appendChild(slotContainer);
-    }
-
-    document.getElementById('slotdle-spin-trigger').addEventListener('click', runSlotdleSpinEngine);
-}
-
-function syncMenuUISelection() {
-    const items = document.querySelectorAll('.menu-item');
-    const configurations = ['daily-quote', 'infinite-quote', 'wordle', 'infinite-wordle', 'screenshot', 'slotdle'];
-    items.forEach((item, index) => {
-        if (configurations[index]) {
-            item.classList.toggle('active', configurations[index] === currentMode);
-        }
-    });
-}
-
 function initGame() {
-    // Force immediate purge of legacy static menus
-    const legacySelector = document.getElementById('mode-selector') || document.querySelector('.mode-buttons');
-    if (legacySelector) legacySelector.remove();
-
-    setupTopRightMenu();
-    setupSlotdleDOM();
-    syncMenuUISelection();
-
     document.getElementById('result-modal').style.display = 'none';
     document.getElementById('guess-form').style.display = 'flex';
     document.getElementById('guess-input').value = '';
     document.getElementById('guess-input').disabled = false;
     document.getElementById('next-btn').style.display = 'none';
     document.getElementById('keyboard').style.display = 'none';
-    document.getElementById('slotdle-view-container').style.display = 'none';
-
-    // Target parent layouts container bounding boxes safely to prevent ghost borders
-    const mainGridContainer = document.getElementById('guess-grid-container') || document.getElementById('guess-grid');
-    if (mainGridContainer) mainGridContainer.style.display = 'flex';
 
     const oldInfBtn = document.getElementById('modal-infinite-wordle-btn');
     if (oldInfBtn) oldInfBtn.remove();
@@ -701,10 +605,10 @@ function initGame() {
         loadSavedState(`insidle_daily_quote_${dateKey}`);
 
     } else if (currentMode === 'infinite-quote') {
-        let availableQuotes = quotesPool.filter(q => !playedQuotes.includes(q.id));
+        const availableQuotes = quotesPool.filter(q => !playedQuotes.includes(q.id));
         if (availableQuotes.length === 0) {
-            playedQuotes = [];
-            availableQuotes = quotesPool;
+            handleExhaustion();
+            return;
         }
         currentClueData = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
         currentAnswer = currentClueData.author;
@@ -725,10 +629,10 @@ function initGame() {
         setupKeyboard();
 
     } else if (currentMode === 'infinite-wordle') {
-        let availableWordles = wordlePool.filter(w => !playedWordles.includes(w.id));
+        const availableWordles = wordlePool.filter(w => !playedWordles.includes(w.id));
         if (availableWordles.length === 0) {
-            playedWordles = [];
-            availableWordles = wordlePool;
+            handleExhaustion();
+            return;
         }
         currentClueData = availableWordles[Math.floor(Math.random() * availableWordles.length)];
         currentAnswer = currentClueData.word.toUpperCase();
@@ -742,144 +646,34 @@ function initGame() {
         setupKeyboard();
 
     } else if (currentMode === 'screenshot') {
-        let availableScreenshots = screenshotPool.filter(s => !playedScreenshots.includes(s.id));
+        const availableScreenshots = screenshotPool.filter(s => !playedScreenshots.includes(s.id));
         if (availableScreenshots.length === 0) {
-            playedScreenshots = [];
-            availableScreenshots = screenshotPool;
+            handleExhaustion();
+            return;
         }
+        
         let freshScreenshots = availableScreenshots.filter(s => !recentScreenshots.includes(s.id));
         if (freshScreenshots.length === 0) {
             freshScreenshots = availableScreenshots;
         }
+        
         currentClueData = freshScreenshots[Math.floor(Math.random() * freshScreenshots.length)];
         currentAnswer = currentClueData.author;
+        
         recentScreenshots.push(currentClueData.id);
-        if (recentScreenshots.length > 3) recentScreenshots.shift();
+        if (recentScreenshots.length > 3) {
+            recentScreenshots.shift();
+        }
 
         document.getElementById('image-display').src = currentClueData.image;
         document.getElementById('image-display').style.display = 'block';
         document.getElementById('next-btn').style.display = 'block';
         resetState();
-
-    } else if (currentMode === 'slotdle') {
-        if (mainGridContainer) mainGridContainer.style.display = 'none';
-        document.getElementById('guess-form').style.display = 'none';
-        document.getElementById('slotdle-view-container').style.display = 'block';
-        renderSlotdleInventoryView();
-        document.getElementById('slotdle-cash-counter').innerText = `$${slotCurrency}`;
-        buildSlotdleReelItems(slotsPool[0]); 
     }
 
-    if (currentMode !== 'slotdle') {
-        setupGrid();
-        updateGridDisplay();
-        if (gameState.gameOver) endGame();
-    }
-}
-
-// --- SLOTDLE ENGINE PROBABILITY CALCULATION CORE ---
-function buildSlotdleReelItems(targetWinner) {
-    const strip = document.getElementById('slotdle-reel-strip');
-    strip.innerHTML = '';
-    
-    for (let i = 0; i < 42; i++) {
-        const placeholder = slotsPool[Math.floor(Math.random() * slotsPool.length)];
-        const node = createReelNode(placeholder);
-        strip.appendChild(node);
-    }
-    
-    const winningNode = createReelNode(targetWinner);
-    strip.appendChild(winningNode);
-
-    strip.appendChild(createReelNode(slotsPool[1 % slotsPool.length]));
-    strip.appendChild(createReelNode(slotsPool[2 % slotsPool.length]));
-}
-
-function createReelNode(itemData) {
-    const node = document.createElement('div');
-    node.className = 'slot-reel-cell';
-    node.innerText = itemData.name;
-    node.style.color = '#ffffff';
-    node.style.borderLeft = `5px solid ${itemData.color}`;
-    return node;
-}
-
-function runSlotdleSpinEngine() {
-    if (isSlotSpinning) return;
-    isSlotSpinning = true;
-
-    const triggerBtn = document.getElementById('slotdle-spin-trigger');
-    const viewport = document.getElementById('slotdle-viewport');
-    const strip = document.getElementById('slotdle-reel-strip');
-    
-    triggerBtn.disabled = true;
-    viewport.style.borderColor = '#3a3a3c';
-    
-    // Exact mathematical distribution calculator using constants weight indexes
-    const totalWeight = slotsPool.reduce((acc, item) => acc + item.weight, 0);
-    let randomSelector = Math.random() * totalWeight;
-    let wonItem = slotsPool[0];
-
-    for (let item of slotsPool) {
-        if (randomSelector < item.weight) {
-            wonItem = item;
-            break;
-        }
-        randomSelector -= item.weight;
-    }
-
-    buildSlotdleReelItems(wonItem);
-    
-    strip.style.transition = 'none';
-    strip.style.transform = 'translateY(0px)';
-    
-    strip.offsetHeight; // Force Layout reflow Matrix
-    
-    strip.style.transition = 'transform 3.5s cubic-bezier(0.1, 0.85, 0.25, 1)';
-    strip.style.transform = 'translateY(-2940px)';
-
-    let tickCount = 0;
-    const tickerInterval = setInterval(() => {
-        if (tickCount < 32) playTypeSound();
-        tickCount++;
-    }, 100);
-
-    setTimeout(() => {
-        clearInterval(tickerInterval);
-        playWinSound();
-        
-        viewport.style.borderColor = wonItem.color;
-        
-        slotCurrency += wonItem.value;
-        localStorage.setItem('insidle_slot_cash', slotCurrency);
-        document.getElementById('slotdle-cash-counter').innerText = `$${slotCurrency}`;
-        
-        slotInventory.unshift({ ...wonItem, timestamp: Date.now() });
-        localStorage.setItem('insidle_slot_inv', JSON.stringify(slotInventory));
-        
-        renderSlotdleInventoryView();
-        
-        isSlotSpinning = false;
-        triggerBtn.disabled = false;
-    }, 3550);
-}
-
-function renderSlotdleInventoryView() {
-    const grid = document.getElementById('slotdle-inventory-grid');
-    grid.innerHTML = '';
-    
-    slotInventory.forEach(item => {
-        const box = document.createElement('div');
-        box.className = 'inventory-card';
-        box.style.borderColor = '#3a3a3c';
-        box.style.borderLeft = `4px solid ${item.color}`;
-        box.innerHTML = `
-            <div class="inv-name">${item.name}</div>
-            <div class="inv-rarity" style="color: ${item.color}">${item.rarity.toUpperCase()}</div>
-            <div class="inv-value">+$${item.value}</div>
-        `;
-        grid.appendChild(box);
-    });
+    setupGrid();
+    updateGridDisplay();
+    if (gameState.gameOver) endGame();
 }
 
 function getDailyItem(pool, dateString) {
@@ -892,8 +686,11 @@ function getDailyItem(pool, dateString) {
 
 function loadSavedState(storageKey) {
     const saved = localStorage.getItem(storageKey);
-    if (saved) gameState = JSON.parse(saved);
-    else resetState();
+    if (saved) {
+        gameState = JSON.parse(saved);
+    } else {
+        resetState();
+    }
 }
 
 function resetState() {
@@ -902,14 +699,15 @@ function resetState() {
 
 function setupGrid() {
     const grid = document.getElementById('guess-grid');
-    if (!grid) return;
     grid.innerHTML = '';
+    
     const columnsCount = (currentMode === 'wordle' || currentMode === 'infinite-wordle') ? currentAnswer.length : 1;
 
     for (let i = 0; i < MAX_GUESSES; i++) {
         const row = document.createElement('div');
         row.className = 'guess-row';
         row.id = `row-${i}`;
+
         for (let j = 0; j < columnsCount; j++) {
             const tile = document.createElement('div');
             tile.className = 'tile empty';
@@ -923,6 +721,13 @@ function setupGrid() {
 function setMode(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
+    
+    const formats = ['daily-quote', 'infinite-quote', 'wordle', 'infinite-wordle', 'screenshot'];
+    formats.forEach(f => {
+        const btn = document.getElementById(`mode-${f}`);
+        if (btn) btn.classList.toggle('active', f === mode);
+    });
+    
     initGame();
 }
 
@@ -943,6 +748,7 @@ function handleGuess(event) {
     }
 
     gameState.guesses.push(userGuess);
+
     const result = checkCloseness(userGuess, currentAnswer);
     if (result === 'correct') {
         gameState.won = true;
@@ -953,7 +759,9 @@ function handleGuess(event) {
         }
     } else {
         playFailSound();
-        if (gameState.guesses.length >= MAX_GUESSES) gameState.gameOver = true;
+        if (gameState.guesses.length >= MAX_GUESSES) {
+            gameState.gameOver = true;
+        }
     }
 
     if (currentMode !== 'infinite-quote' && currentMode !== 'infinite-wordle' && currentMode !== 'screenshot') {
@@ -965,6 +773,7 @@ function handleGuess(event) {
 
     updateGridDisplay();
     input.value = '';
+
     if (gameState.gameOver) endGame();
 }
 
@@ -992,6 +801,7 @@ function submitWordleGuess() {
     }
     
     gameState.guesses.push(currentWordleGuess);
+    
     if (currentWordleGuess === currentAnswer) {
         gameState.won = true;
         gameState.gameOver = true;
@@ -1001,10 +811,13 @@ function submitWordleGuess() {
         }
     } else {
         playFailSound();
-        if (gameState.guesses.length >= MAX_GUESSES) gameState.gameOver = true;
+        if (gameState.guesses.length >= MAX_GUESSES) {
+            gameState.gameOver = true;
+        }
     }
     
     currentWordleGuess = "";
+    
     if (currentMode === 'wordle') {
         const today = new Date();
         const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
@@ -1013,12 +826,14 @@ function submitWordleGuess() {
     
     updateGridDisplay();
     updateKeyboardKeyStatuses();
+    
     if (gameState.gameOver) endGame();
 }
 
 function setupKeyboard() {
     const keyboardContainer = document.getElementById('keyboard');
     keyboardContainer.innerHTML = '';
+    
     const rows = [
         ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
         ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
@@ -1028,17 +843,26 @@ function setupKeyboard() {
     rows.forEach(row => {
         const rowElement = document.createElement('div');
         rowElement.className = 'keyboard-row';
+        
         row.forEach(key => {
             const keyElement = document.createElement('button');
             keyElement.innerText = key;
             keyElement.setAttribute('data-key', key);
             keyElement.className = 'key';
-            if (key === 'ENTER' || key === 'BACKSPACE' || key === '⌫') keyElement.classList.add('wide');
-            keyElement.addEventListener('click', () => { handleWordleInput(key); });
+            if (key === 'ENTER' || key === 'BACKSPACE' || key === '⌫') {
+                keyElement.classList.add('wide');
+            }
+            
+            keyElement.addEventListener('click', () => {
+                handleWordleInput(key);
+            });
+            
             rowElement.appendChild(keyElement);
         });
+        
         keyboardContainer.appendChild(rowElement);
     });
+    
     updateKeyboardKeyStatuses();
 }
 
@@ -1048,11 +872,16 @@ function updateKeyboardKeyStatuses() {
         const guess = gameState.guesses[i];
         for (let j = 0; j < guess.length; j++) {
             const char = guess[j];
-            if (currentAnswer[j] === char) statuses[char] = 'correct';
-            else if (currentAnswer.includes(char)) {
-                if (statuses[char] !== 'correct') statuses[char] = 'close';
+            if (currentAnswer[j] === char) {
+                statuses[char] = 'correct';
+            } else if (currentAnswer.includes(char)) {
+                if (statuses[char] !== 'correct') {
+                    statuses[char] = 'close';
+                }
             } else {
-                if (!statuses[char]) statuses[char] = 'incorrect';
+                if (!statuses[char]) {
+                    statuses[char] = 'incorrect';
+                }
             }
         }
     }
@@ -1065,22 +894,30 @@ function updateKeyboardKeyStatuses() {
             let statusClass = statuses[keyText];
             if (isMasonTheme && statusClass === 'correct') statusClass = 'correct mason-mode';
             keyElement.className = `key ${statusClass}`;
-            if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '⌫') keyElement.classList.add('wide');
+            if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '⌫') {
+                keyElement.classList.add('wide');
+            }
         } else if (keyText) {
             keyElement.className = 'key';
-            if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '0') keyElement.classList.add('wide');
+            if (keyText === 'ENTER' || keyText === 'BACKSPACE' || keyText === '⌫') {
+                keyElement.classList.add('wide');
+            }
         }
     });
 }
 
 function updateGridDisplay() {
     const isMasonTheme = currentAnswer.toUpperCase() === 'MASON';
+
     for (let i = 0; i < MAX_GUESSES; i++) {
         const currentGuessStr = gameState.guesses[i];
         
         if (currentMode === 'wordle' || currentMode === 'infinite-wordle') {
             let targetLetterCounts = {};
-            for (let char of currentAnswer) targetLetterCounts[char] = (targetLetterCounts[char] || 0) + 1;
+            for (let char of currentAnswer) {
+                targetLetterCounts[char] = (targetLetterCounts[char] || 0) + 1;
+            }
+
             let tileStatuses = Array(currentAnswer.length).fill('incorrect');
 
             if (currentGuessStr) {
@@ -1100,7 +937,6 @@ function updateGridDisplay() {
 
             for (let j = 0; j < currentAnswer.length; j++) {
                 const tile = document.getElementById(`row-${i}-tile-${j}`);
-                if (!tile) continue;
                 if (currentGuessStr) {
                     tile.innerText = currentGuessStr[j] || '';
                     let targetStatus = tileStatuses[j];
@@ -1116,7 +952,6 @@ function updateGridDisplay() {
             }
         } else {
             const tile = document.getElementById(`row-${i}-tile-0`);
-            if (!tile) continue;
             if (currentGuessStr) {
                 tile.innerText = currentGuessStr;
                 let matchResult = checkCloseness(currentGuessStr, currentAnswer);
@@ -1138,6 +973,7 @@ function endGame() {
     const modal = document.getElementById('result-modal');
     const title = document.getElementById('result-title');
     const meta = document.getElementById('result-meta');
+    
     modal.style.display = 'flex';
     
     if (gameState.won) {
@@ -1156,14 +992,16 @@ function endGame() {
             infBtn.innerText = "Play Infinite Wordle";
             infBtn.style.marginTop = "18px";
             infBtn.style.padding = "10px 20px";
-            infBtn.style.backgroundColor = "#6aaa64";
+            infBtn.style.backgroundColor = "#2ed573";
             infBtn.style.color = "#ffffff";
             infBtn.style.border = "none";
-            infBtn.style.borderRadius = "4px";
+            infBtn.style.borderRadius = "5px";
             infBtn.style.cursor = "pointer";
             infBtn.style.fontFamily = "'Inter', sans-serif";
             infBtn.style.fontWeight = "bold";
-            infBtn.onclick = () => { setMode('infinite-wordle'); };
+            infBtn.onclick = () => {
+                setMode('infinite-wordle');
+            };
             modalContent.appendChild(infBtn);
         }
     }
@@ -1171,12 +1009,19 @@ function endGame() {
 
 function handleNextRound() {
     if (currentMode === 'infinite-quote' && currentClueData) {
-        if (!playedQuotes.includes(currentClueData.id)) playedQuotes.push(currentClueData.id);
+        if (!playedQuotes.includes(currentClueData.id)) {
+            playedQuotes.push(currentClueData.id);
+        }
     } else if (currentMode === 'infinite-wordle' && currentClueData) {
-        if (!playedWordles.includes(currentClueData.id)) playedWordles.push(currentClueData.id);
+        if (!playedWordles.includes(currentClueData.id)) {
+            playedWordles.push(currentClueData.id);
+        }
     } else if (currentMode === 'screenshot' && currentClueData) {
-        if (!playedScreenshots.includes(currentClueData.id)) playedScreenshots.push(currentClueData.id);
+        if (!playedScreenshots.includes(currentClueData.id)) {
+            playedScreenshots.push(currentClueData.id);
+        }
     }
+
     if (currentMode === 'infinite-quote' || currentMode === 'infinite-wordle' || currentMode === 'screenshot') {
         initGame();
     }
@@ -1193,6 +1038,7 @@ function shareResult() {
             let targetLetterCounts = {};
             for (let char of currentAnswer) targetLetterCounts[char] = (targetLetterCounts[char] || 0) + 1;
             let rowIcons = Array(currentAnswer.length).fill('🟥');
+
             for (let j = 0; j < currentAnswer.length; j++) {
                 if (guess[j] === currentAnswer[j]) { rowIcons[j] = checkIcon; targetLetterCounts[guess[j]]--; }
             }
@@ -1205,6 +1051,7 @@ function shareResult() {
             shareText += (status === 'correct') ? `${checkIcon}\n` : (status === 'close') ? '🟨\n' : '🟥\n';
         }
     }
+    
     shareText += `Score: ${gameState.won ? gameState.guesses.length : 'X'}/${MAX_GUESSES}\nLink: ${window.location.href}`;
     
     navigator.clipboard.writeText(shareText).then(() => {
@@ -1219,227 +1066,16 @@ window.addEventListener('keydown', (e) => {
     handleWordleInput(e.key);
 });
 
-// --- STYLESHEET REGISTRY MATRIX ---
+// --- ENGINE STYLE SHEET REGISTRY ---
 const customStyles = document.createElement('style');
 customStyles.innerHTML = `
-    /* HIDE LEGACY STATIC SELECTORS GLOBALLY */
-    #mode-selector, .mode-buttons { display: none !important; }
-
-    /* SLEEK DROP-DOWN MENU STYLES */
-    #sleek-menu-wrapper {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 200000;
-        font-family: 'Inter', sans-serif;
-    }
-    #sleek-menu-toggle {
-        width: 44px;
-        height: 44px;
-        background-color: #121213;
-        border: 2px solid #3a3a3c;
-        border-radius: 8px;
-        color: #ffffff;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-    #sleek-menu-toggle:hover {
-        background-color: #272729;
-    }
-    #sleek-menu-dropdown {
-        position: absolute;
-        top: 52px;
-        right: 0;
-        background-color: #121213;
-        border: 2px solid #3a3a3c;
-        border-radius: 8px;
-        width: 200px;
-        overflow: hidden;
-        display: none;
-        transform-origin: top right;
-    }
-    #sleek-menu-dropdown.open {
-        display: block;
-        animation: menuGrownIn 0.15s ease-out forwards;
-    }
-    @keyframes menuGrownIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
-    .menu-item {
-        padding: 12px 16px;
-        color: #d7dede;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        border-bottom: 1px solid #272729;
-    }
-    .menu-item:last-child { border-bottom: none; }
-    .menu-item:hover {
-        background-color: #272729;
-    }
-    .menu-item.active {
-        background-color: #6aaa64 !important;
-        color: #ffffff !important;
-    }
-
-    /* WORDLE METRIC MINIMALIST SLOT MACHINE */
-    #slotdle-view-container {
-        width: 100%;
-        max-width: 480px;
-        margin: 0 auto;
-        font-family: 'Inter', sans-serif;
-    }
-    #slotdle-header-block {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    #slotdle-title-label {
-        font-size: 2rem;
-        font-weight: 700;
-        letter-spacing: 3px;
-        color: #ffffff;
-    }
-    #slotdle-cash-counter {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #6aaa64;
-        margin-top: 4px;
-    }
-    #slotdle-odds-index {
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #818384;
-        margin-top: 8px;
-        letter-spacing: 0.5px;
-        line-height: 1.4;
-    }
-    #slotdle-machine-wrapper {
-        background: #121213;
-        border: 2px solid #3a3a3c;
-        border-radius: 4px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-    }
-    #slotdle-viewport {
-        position: relative;
-        width: 100%;
-        height: 62px;
-        background: #121213;
-        overflow: hidden;
-        border: 2px solid #3a3a3c;
-        box-sizing: border-box;
-        transition: border-color 0.3s ease;
-    }
-    #slotdle-horizontal-bar {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        pointer-events: none;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-    }
-    #slotdle-horizontal-bar::after {
-        content: '';
-        display: block;
-        width: 100%;
-        height: 2px;
-        background: rgba(255, 255, 255, 0.15);
-    }
-    #slotdle-reel-strip {
-        display: flex;
-        flex-direction: column;
-        transform: translateY(0px);
-    }
-    .slot-reel-cell {
-        height: 58px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.15rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        background: #121213;
-        box-sizing: border-box;
-        text-transform: uppercase;
-    }
-    #slotdle-spin-trigger {
-        width: 100%;
-        padding: 14px;
-        background: #818384;
-        border: none;
-        border-radius: 4px;
-        color: #ffffff;
-        font-size: 1.1rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-    }
-    #slotdle-spin-trigger:hover:not(:disabled) {
-        background: #6aaa64;
-    }
-    #slotdle-spin-trigger:disabled {
-        background: #272729;
-        color: #565758;
-        cursor: not-allowed;
-    }
-    
-    /* INVENTORY REFLOW SYSTEM GRID layout */
-    #slotdle-inventory-title {
-        margin-top: 30px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        letter-spacing: 1.5px;
-        color: #818384;
-        border-bottom: 2px solid #3a3a3c;
-        padding-bottom: 6px;
-        margin-bottom: 12px;
-    }
-    #slotdle-inventory-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        width: 100%;
-        padding-bottom: 40px;
-    }
-    .inventory-card {
-        flex: 0 0 calc(33.33% - 7px);
-        background: #121213;
-        border: 2px solid #3a3a3c;
-        border-radius: 4px;
-        padding: 10px;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: 4px;
-        animation: invCardSpawn 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    }
-    @keyframes invCardSpawn {
-        from { opacity: 0; transform: scale(0.85) translateY(5px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .inv-name { font-size: 0.8rem; font-weight: 700; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-    .inv-rarity { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; }
-    .inv-value { font-size: 0.8rem; font-weight: 700; color: #6aaa64; }
-
-    /* INTEGRATED CLEAN WORDLE CORE FIXES */
     .wordle-mode-header {
         font-family: 'Inter', sans-serif !important;
         font-style: normal !important;
-        font-size: 1.6rem !important;
-        font-weight: 700 !important;
+        font-size: 1.7rem !important;
+        font-weight: 800 !important;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
         text-align: center;
         background: none !important;
         border: none !important;
@@ -1447,59 +1083,215 @@ customStyles.innerHTML = `
         padding: 10px 0 !important;
         margin: 5px 0 15px 0 !important;
     }
-    .wordle-mode-header::before, .wordle-mode-header::after { display: none !important; }
+    .wordle-mode-header::before,
+    .wordle-mode-header::after { display: none !important; }
+
     .celebration-overlay {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: rgba(0, 0, 0, 0.6); display: flex;
-        justify-content: center; align-items: center; z-index: 99999;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center; align-items: center;
+        z-index: 99999;
         animation: celebrationAnim 2s ease-in-out forwards; 
     }
-    .celebration-text { color: #ffffff; font-family: 'Inter', sans-serif; font-size: 2.5rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
-    .celebration-text span { color: #6aaa64; }
-    .tile.correct.mason-mode, .key.correct.mason-mode { background-color: #ff9f43 !important; border-color: #ff9f43 !important; color: #ffffff !important; }
-    .gurshaan-egg-c { color: #00a8ff !important; display: inline-block; font-size: 3.5rem; font-weight: 900; transform-origin: bottom center; animation: gurshaanFluidBounce 2.0s cubic-bezier(0.28, 0.84, 0.42, 1) forwards; }
-    @keyframes gurshaanFluidBounce { 0% { transform: scale(1, 1) translateY(0); } 10% { transform: scale(1.2, 0.8) translateY(0); } 25% { transform: scale(0.9, 1.15) translateY(-50px); } 40% { transform: scale(1.05, 0.9) translateY(0); } 55% { transform: scale(0.97, 1.02) translateY(-15px); } 70% { transform: scale(1.02, 0.98) translateY(0); } 85% { transform: scale(1, 1) translateY(-3px); } 100% { transform: scale(1, 1) translateY(0); } }
+
+    .celebration-text {
+        color: #ffffff;
+        font-family: 'Inter', sans-serif;
+        font-size: 2.8rem; font-weight: 900;
+        text-align: center; text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    .celebration-text span { color: #2ed573; }
+
+    /* MASON MODIFIER */
+    .tile.correct.mason-mode, .key.correct.mason-mode {
+        background-color: #ff9f43 !important;
+        border-color: #ff9f43 !important;
+        color: #ffffff !important;
+    }
+
+    /* GURSHAAN LIQUID "C" ANIMATION */
+    .gurshaan-egg-c {
+        color: #00a8ff !important;
+        display: inline-block;
+        font-size: 3.5rem;
+        font-weight: 900;
+        transform-origin: bottom center;
+        animation: gurshaanFluidBounce 2.0s cubic-bezier(0.28, 0.84, 0.42, 1) forwards;
+    }
+
+    @keyframes gurshaanFluidBounce {
+        0%   { transform: scale(1, 1)      translateY(0); }
+        10%  { transform: scale(1.2, 0.8)  translateY(0); }
+        25%  { transform: scale(0.9, 1.15) translateY(-50px); }
+        40%  { transform: scale(1.05, 0.9) translateY(0); }
+        55%  { transform: scale(0.97, 1.02) translateY(-15px); }
+        70%  { transform: scale(1.02, 0.98) translateY(0); }
+        85%  { transform: scale(1, 1)      translateY(-3px); }
+        100% { transform: scale(1, 1)      translateY(0); }
+    }
+
+    /* DAMIEN WAVE CONFIG */
     .damien-egg-overlay { animation: celebrationAnim 3.2s ease-in-out forwards !important; }
     .damien-egg-text { display: flex; gap: 6px; justify-content: center; align-items: center; }
-    .damien-egg-letter { display: inline-block; color: #9b59b6; font-family: 'Inter', sans-serif; font-size: 4rem; font-weight: 900; animation: damienWaveAnim 1.1s ease-in-out infinite; }
-    @keyframes damienWaveAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-35px); } }
+    .damien-egg-letter {
+        display: inline-block; color: #9b59b6;
+        font-family: 'Inter', sans-serif; font-size: 4rem; font-weight: 900;
+        animation: damienWaveAnim 1.1s ease-in-out infinite;
+    }
+    @keyframes damienWaveAnim {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-35px); }
+    }
+
+    /* CALLUM FLUID GIF OVERLAY */
     .callum-egg-overlay { animation: fadeInOut 2.0s ease-in-out forwards !important; }
-    .callum-egg-gif { max-width: 80vw; max-height: 70vh; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); animation: scaleFluidInOut 2.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-    @keyframes fadeInOut { 0%, 100% { opacity: 0; } 15%, 85% { opacity: 1; } }
-    @keyframes scaleFluidInOut { 0% { transform: scale(0.4); } 15%, 85% { transform: scale(1); } 100% { transform: scale(0.85); } }
+    .callum-egg-gif {
+        max-width: 80vw; max-height: 70vh;
+        border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        animation: scaleFluidInOut 2.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; }
+        15%, 85% { opacity: 1; }
+    }
+    @keyframes scaleFluidInOut {
+        0% { transform: scale(0.4); }
+        15%, 85% { transform: scale(1); }
+        100% { transform: scale(0.85); }
+    }
+
+    /* MRS KNIBBS GLOW MATRIX */
     .knibbs-egg-overlay { animation: celebrationAnim 3.2s ease-in-out forwards !important; }
     .knibbs-egg-text { display: flex; gap: 4px; justify-content: center; align-items: center; }
-    .knibbs-egg-letter { display: inline-block; color: #ff3838; font-family: 'Inter', sans-serif; font-size: 3.6rem; font-weight: 900; text-shadow: 0 0 12px #ff3838, 0 0 30px rgba(255, 56, 56, 0.7); animation: knibbsWaveAnim 1.2s ease-in-out infinite; }
-    @keyframes knibbsWaveAnim { 0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px red); } 50% { transform: translateY(-30px); filter: drop-shadow(0 0 8px red); } }
+    .knibbs-egg-letter {
+        display: inline-block; color: #ff3838;
+        font-family: 'Inter', sans-serif; font-size: 3.6rem; font-weight: 900;
+        text-shadow: 0 0 12px #ff3838, 0 0 30px rgba(255, 56, 56, 0.7);
+        animation: knibbsWaveAnim 1.2s ease-in-out infinite;
+    }
+    @keyframes knibbsWaveAnim {
+        0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px red); }
+        50% { transform: translateY(-30px); filter: drop-shadow(0 0 8px red); }
+    }
+
+    /* RILEY MEME CONFIGURATION */
     .riley-egg-overlay { animation: celebrationAnim 3.0s ease-in-out forwards !important; }
     .riley-egg-text { display: flex; gap: 20px; }
-    .riley-egg-digit { display: inline-block; font-size: 7rem; font-weight: 950; background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 300% 300%; animation: rileyBounce 0.7s ease-in-out infinite alternate, rainbowSpectrum 4s linear infinite; }
-    @keyframes rileyBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-50px); } }
-    @keyframes rainbowSpectrum { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    .bogo-row-dragged { animation: bogoRowTimeline 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-    .bogo-egg-sprite { position: fixed; top: 50%; right: -200px; width: 140px; height: auto; transform: translateY(-50%); z-index: 100000; pointer-events: none; animation: bogoSpriteTimeline 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-    @keyframes bogoRowTimeline { 0% { transform: translateX(0); } 22% { transform: translateX(30px); } 38%, 68% { transform: translateX(-130vw); } 76% { transform: translateX(45px); } 86% { transform: translateX(-15px); } 100% { transform: translateX(0); } }
-    @keyframes bogoSpriteTimeline { 0% { right: -200px; transform: translateY(-50%) scaleX(1); } 22% { right: 12%; transform: translateY(-50%) scaleX(1); } 38%, 68% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(1); } 69% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(-1); } 82% { right: -200px; transform: translateY(-50%) scaleX(-1); } 100% { right: -200px; } }
-    .bogo-physics-sprite { user-select: none; -webkit-user-drag: none; touch-action: none; }
-    .markiplier-egg-gif { position: fixed; top: 20px; left: 20px; max-width: 240px; height: auto; z-index: 100000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); pointer-events: none; animation: markiplierTimeline 3.0s ease-in-out forwards; }
-    @keyframes markiplierTimeline { 0% { opacity: 0; transform: scale(0.8) translateY(-10px); } 12% { opacity: 1; transform: scale(1) translateY(0); } 88% { opacity: 1; transform: scale(1) translateY(0); } 100% { opacity: 0; transform: scale(0.8) translateY(-10px); } }
-    .tfs-egg-gif { position: fixed; bottom: 20px; left: 20px; max-width: 240px; height: auto; z-index: 100000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); pointer-events: none; animation: tfsTimeline 3.0s ease-in-out forwards; }
-    @keyframes tfsTimeline { 0% { opacity: 0; transform: scale(0.8) translateY(10px); } 12% { opacity: 1; transform: scale(1) translateY(0); } 88% { opacity: 1; transform: scale(1) translateY(0); } 100% { opacity: 0; transform: scale(0.8) translateY(10px); } }
-    @keyframes celebrationAnim { 0% { opacity: 0; transform: scale(0.75); } 10% { opacity: 1; transform: scale(1); } 88% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.85); } }
+    .riley-egg-digit {
+        display: inline-block; font-size: 7rem; font-weight: 950;
+        background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-size: 300% 300%;
+        animation: rileyBounce 0.7s ease-in-out infinite alternate, rainbowSpectrum 4s linear infinite;
+    }
+    @keyframes rileyBounce {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-50px); }
+    }
+    @keyframes rainbowSpectrum {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* BOGO PHYSICS DRAG ENGINE */
+    .bogo-row-dragged {
+        animation: bogoRowTimeline 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .bogo-egg-sprite {
+        position: fixed; top: 50%; right: -200px;
+        width: 140px; height: auto;
+        transform: translateY(-50%); z-index: 100000;
+        pointer-events: none;
+        animation: bogoSpriteTimeline 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    @keyframes bogoRowTimeline {
+        0% { transform: translateX(0); }
+        22% { transform: translateX(30px); }
+        38%, 68% { transform: translateX(-130vw); }
+        76% { transform: translateX(45px); }
+        86% { transform: translateX(-15px); }
+        100% { transform: translateX(0); }
+    }
+    @keyframes bogoSpriteTimeline {
+        0% { right: -200px; transform: translateY(-50%) scaleX(1); }
+        22% { right: 12%; transform: translateY(-50%) scaleX(1); }
+        38%, 68% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(1); }
+        69% { right: calc(12% + 130vw); transform: translateY(-50%) scaleX(-1); }
+        82% { right: -200px; transform: translateY(-50%) scaleX(-1); }
+        100% { right: -200px; }
+    }
+
+    /* INTERACTIVE RIGID BOGO PHYSICS TOKENS */
+    .bogo-physics-sprite {
+        user-select: none;
+        -webkit-user-drag: none;
+        touch-action: none;
+    }
+
+    /* MARKIPLIER EASTER EGG LAYOUT */
+    .markiplier-egg-gif {
+        position: fixed;
+        top: 20px; left: 20px;
+        max-width: 240px; height: auto;
+        z-index: 100000;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        animation: markiplierTimeline 3.0s ease-in-out forwards;
+    }
+    @keyframes markiplierTimeline {
+        0% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+        12% { opacity: 1; transform: scale(1) translateY(0); }
+        88% { opacity: 1; transform: scale(1) translateY(0); }
+        100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+    }
+
+    /* 3FS EASTER EGG LAYOUT */
+    .tfs-egg-gif {
+        position: fixed;
+        bottom: 20px; left: 20px;
+        max-width: 240px; height: auto;
+        z-index: 100000;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        animation: tfsTimeline 3.0s ease-in-out forwards;
+    }
+    @keyframes tfsTimeline {
+        0% { opacity: 0; transform: scale(0.8) translateY(10px); }
+        12% { opacity: 1; transform: scale(1) translateY(0); }
+        88% { opacity: 1; transform: scale(1) translateY(0); }
+        100% { opacity: 0; transform: scale(0.8) translateY(10px); }
+    }
+
+    @keyframes celebrationAnim {
+        0% { opacity: 0; transform: scale(0.75); }
+        10% { opacity: 1; transform: scale(1); }
+        88% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.85); }
+    }
 `;
 document.head.appendChild(customStyles);
 
 function attachGlobalListeners() {
     const textInput = document.getElementById('guess-input');
     if (textInput) {
-        textInput.addEventListener('input', () => { playTypeSound(); });
+        textInput.addEventListener('input', () => {
+            playTypeSound();
+        });
     }
+
     document.removeEventListener('click', handleGlobalUiClicks);
     document.addEventListener('click', handleGlobalUiClicks);
 }
 
 function handleGlobalUiClicks(e) {
-    if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('key') && e.target.id !== 'slotdle-spin-trigger') {
+    if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('key')) {
         playClickSound();
     }
 }
